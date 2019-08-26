@@ -41,17 +41,25 @@ class Quota(TestBase):
 	  #print(space)
        # if ( (host=="ls4" and space=="/home1") or (host=="maverick" and space=="/home") or (host=="ls5" and space=="/home1")):
           rawinfo=space.split("\t")
-	  if rawinfo[0]==userid:
+	  #print(rawinfo)
+	  if (rawinfo[0]==userid) or (userid in rawinfo[0]):
             usage = rawinfo[1][:-4]
             files = rawinfo[3]
             quota = rawinfo[2][:-1]
+	    if rawinfo[0]==userid:
+	      fsuse = rawinfo[5][:-4]
+              fsmax = rawinfo[6][:-1]
+	      if (float(fsuse)/float(fsmax) > 0.9):
+	        fscolor=badcolor
+              else:
+	        fscolor=goodcolor;
             if quota=="0":
               badusage=100
             else:
               badusage=int(quota)
             if float(usage) > badusage:
               ucolor=badcolor
-              umsg = "\033[1;31mare over quota limit\033[0m"
+              umsg = "\033[1;31mare over the quota limit\033[0m"
               if quota=="0":
                 Flag=True
               else:
@@ -65,9 +73,15 @@ class Quota(TestBase):
             else:
               fcolor=goodcolor
           
-            if (rawinfo[2]=="0G"):
-              print("\tOn \033[1;36m{0}\033[0m you have no quota limit, use \033[1;{3}{1} GB\033[0m and have \033[1;{4}{2}\033[0m files".format(rawinfo[0],usage,files,ucolor,fcolor))
+	    if rawinfo[0]==userid:
+              if (rawinfo[2]=="0G"):
+                print("\tIn \033[1;36m{0}\033[0m you have no quota limit, use \033[1;{3}{1} GB\033[0m and have \033[1;{4}{2}\033[0m files".format("General Home Directory",usage,files,ucolor,fcolor))
+                print("\t   (total file system usage is \033[1;{2}{0} GB\033[0m out of \033[1;{2}{1} GB\033[0m)".format(fsuse,fsmax,fscolor))
+                #print("\tOn \033[1;36m{0}\033[0m you have no quota limit, use \033[1;{3}{1} GB\033[0m (total file system usage is {5} GB out of {6} GB) and have \033[1;{4}{2}\033[0m files".format(rawinfo[0],usage,files,ucolor,fcolor,fsuse,fsmax))
+              else:
+                print("\tIn \033[1;36m{0}\033[0m you {6} \033[1;{7}{3} GB\033[0m, use \033[1;{4}{1} GB\033[0m and have \033[1;{5}{2}\033[0m files".format("General home directory",usage,files,quota,ucolor,fcolor,umsg,ucolor))
+                print("\t   (total file system usage is \033[1;{2}{0} GB\033[0m out of \033[1;{2}{1} GB\033[0m)".format(fsuse,fsmax,fscolor))
             else:
-              print("\tOn \033[1;36m{0}\033[0m you {6} \033[1;{7}{3} GB\033[0m, use \033[1;{4}{1} GB\033[0m and have \033[1;{5}{2}\033[0m files".format(rawinfo[0],usage,files,quota,ucolor,fcolor,umsg,ucolor))
+              print("\tIn \033[1;36m{0}\033[0m you {6} \033[1;{7}{3} GB\033[0m, use \033[1;{4}{1} GB\033[0m and have \033[1;{5}{2}\033[0m files".format("PE Home Directory",usage,files,quota,ucolor,fcolor,umsg,ucolor))
       
       return Flag     
