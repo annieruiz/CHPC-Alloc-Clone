@@ -32,7 +32,7 @@ class SSH_key(TestBase):
     status  = run_cmd(cmd)
 
     if (status != 0):
-      self.error_message+="\tError: ~/.ssh/id_rsa.pub not found in ~/.ssh/authorized_keys.\n"
+      self.error_message+="\tInfo: ~/.ssh/id_rsa.pub not found in ~/.ssh/authorized_keys.\n"
       return False 
 
     cmd2    ="awk '{if ($1!=\"ssh-dss\" && $1!=\"ssh-rsa\" || NF <= 1) print $0}' ~/.ssh/authorized_keys"

@@ -1,5 +1,6 @@
 import subprocess
 import os
+import re
 
 def capture(cmd):
   p = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, shell=True)
@@ -21,9 +22,9 @@ def syshost():
 # hostA = platform.node().split('.')
   hostlong = capture("hostname --long")
   hostA = hostlong.split('.')
-  idx = 1 #Si changed this from 2 to 1
+  idx = 0 # MC changed from 1 to 0
   if (len(hostA) < 2):
     idx = 0
-# print hostA[idx]
-
-  return hostA[idx]
+#  print re.sub(r'\d+', '',hostA[idx])
+# MC also strip digits from the hostname
+  return re.sub(r'\d+', '',hostA[idx])

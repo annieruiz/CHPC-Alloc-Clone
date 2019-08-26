@@ -49,7 +49,7 @@ class Modules(TestBase):
       lmodcmd=os.environ['LMOD_CMD']
       mlcmd=lmodcmd + " python list"
       output=captureErr(mlcmd).split()
-      module_need=["TACC"]
+      module_need=["chpc"]
 #     print(output)
       for mod1 in module_need:
 	if not any(mod1 in tmpstr for tmpstr in output):

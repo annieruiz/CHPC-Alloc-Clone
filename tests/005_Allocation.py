@@ -2,6 +2,7 @@ from __future__ import print_function
 from TestBase   import TestBase
 from util       import run_cmd, capture,syshost
 from datetime import *
+import re
 
 class Allocation(TestBase):
   
@@ -14,75 +15,144 @@ class Allocation(TestBase):
     pass
 
   def name(self):
-    return "Check allocation balance"
+    return "Check general, group and GPU allocation access"
 
   def description(self):
-    return "Check allocation balance:"
+    return "Check general, group and GPU allocation access:"
 
   def error(self):
     print("\033[1;31m%s\033[0m" %(self.error_message))
 
   def help(self):
-    print("\tPlease renew your allocations.\n")
+    print("\tPlease contact CHPC to fix your allocations.\n")
 
   def execute(self):
-      userid=capture("whoami").rstrip()
-###   userid="jkatzene"      #Fake test 
-      
-      host=syshost()
-      if (host=="stampede2" or host=="maverick" or host=="ls5"):
-        TACC_ACC_DIR="/usr/local/etc/"
-      elif host=="ls4":
-        TACC_ACC_DIR="/sge_common/default/acct/map/"
-      else:
-        return True 
+    host = syshost()
+    #print(host)
+    if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="redwood"):
+      return True
 
-      proj_map=TACC_ACC_DIR+"project.map"
-      projuser_map=TACC_ACC_DIR+"projectuser.map"
-      projbalance_map=TACC_ACC_DIR+"projectbalance.map"
-      usage_map=TACC_ACC_DIR+"usage.map"
- 
+    Flag=False
+    userid=capture("whoami").rstrip()
+    #userid="u1119546"
+    #userid="u0631741"
+    # redwood tests
+    #userid="u6000771"
+    #userid="u0413537"
+    #userid="u6002243"
+
+    mycmd="groups {0}".format(userid)
+    myout=capture(mycmd).split(":")
+    groups=myout[1].split()
+
+    grepcmd1="sacctmgr -n -p show assoc where user={0}".format(userid) 
+    #print(grepcmd1)
+    myaccts=capture(grepcmd1).split()
+    #print(myaccts,len(myaccts))
+    if host=="redwood":
+      clusters=["redwood"]
+    else:
+      clusters=["kingspeak","notchpeak","ember","lonepeak"]
+    for cluster in clusters:
 #     grepcmd="grep %s %s" %(userid,projuser_map)
-      grepcmd="""awk -v user=%s '$1 == user {print $0}' %s """ %(userid,projuser_map)
-#     print(grepcmd)
-      myprojects=capture(grepcmd).split()
-#     print(myprojects)
-      if len(myprojects) < 2:
-	self.error_message+="\tError: "+"No valid allocation\n"
-        return False
-      
-      Flag=False
+      FCFlag=True
+      if cluster=="kingspeak":
+	cl="kp"
+      elif cluster=="notchpeak":
+	cl="np"
+      elif cluster=="ember":
+	cl="em"
+      elif cluster=="lonepeak":
+	cl="lp"
+      elif cluster=="redwood":
+	cl="rw"
+      for group in groups:
+	# general allocation
+	matchgrp = [s for s in myaccts if group in s]
+	matchcl = [s for s in matchgrp if cluster in s]
+	#print(matchcl, len(matchcl))
+        if len(matchcl) > 0:
+	  if (len(matchcl) > 1):
+            # this will be true if there are owner nodes
+	    matchstr="^((?!{0}).)*$".format(cl)  
+	    #print(matchstr)
+	    r=re.compile(matchstr)
+	    matchcl = list(filter(r.match, matchcl))
+	    #print(matchcl)
+            #print("Error, more than 1 match: {0}".format(matchcl))
+	  matchfc = [s for s in matchcl if "freecycle" in s]
+	  if len(matchfc) > 0:
+            pnames=matchfc[0].split('|')
+            print("\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(group,cluster))
+	    print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
 
-      for proj in myprojects[1:]:
-        grepcmd="grep %s$ %s" %(proj,proj_map)
-#       print(grepcmd)
-	proj_name_all=capture(grepcmd).split()
-#	print(proj_name_all)
-	if proj_name_all:
-          proj_name=proj_name_all[0]
-#         grepcmd="grep %s %s" %(proj_name,usage_map)
-          grepcmd="awk -F: '{ if ($1==\"%s\") print}' %s" %(proj_name,usage_map)
-#         print(grepcmd)
-#         print(capture(grepcmd))
-          usage_report=capture(grepcmd).split(":")
-	  if len(usage_report) < 6:
-	    print("\033[1;33m\tWarning: Valid allocation detected.\033[0m")
-            continue
-          exp_date=usage_report[3].split("-")
-          exp_date_f=date(int(exp_date[0]), int(exp_date[1]), int(exp_date[2]))
-          today = date.today()
+	  else:	  
+            myrecord1 = matchcl[0].split('|')
+            #print(myrecord1)
+            if myrecord1[1] == group:
+              print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
+              Flag=True
 
-          cur_bal=float(usage_report[6])
-#         print("        My project '%s'; balance %s." %(proj_name,cur_bal))
-	  if exp_date_f < date.today():
-	    print("\033[1;33m\tWarning: One of your projects '%s' has expired.\033[0m" %proj_name[0])
-          elif cur_bal < 0:
-	    print("\033[1;33m\tWarning: One of your projects '%s' has negative balance %s.\033[0m" %(proj_name,cur_bal))
-          else:
-            Flag=True
+      # owner nodes 
+      # have to get matchcl again since we may have changed it above
+     # matchcl = [s for s in myaccts if cluster in s]
+     #matchstr=".*\\b{0}\\.*".format(cl)  
+     #print(matchstr)
+     #print(matchcl, len(matchcl))
+     #r=re.compile(matchstr)
+     #myprojects = list(filter(r.match, matchcl))
+     #print(myprojects)
+     #if len(myprojects) > 0:
+     #  for project in myprojects:
+     #    pnames=project.split('|')
+     #    #print(pnames)
+     #    print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
+
+      # the regex above does not match "em" as a single word (perhaps it's due to the filter() function
+      # works fine on https://www.regextester.com/
+      # so run the sacctmgr command again with grep -w
+      grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2}".format(userid,cluster,cl) 
+      #print(grepcmd1)
+      myprojects=capture(grepcmd1).split()
+      #print(myprojects,len(myprojects))
+      if len(myprojects) > 0:
+        for project in myprojects:
+          pnames=project.split('|')
+          #print(pnames)
+	  print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
+
+      # owner guest
+      # have to get matchcl again since we may have changed it above
+      matchcl = [s for s in myaccts if cluster in s]
+      matchstr=".*\\bowner\\.*"
+     #print(matchstr)
+      #print(matchcl, len(matchcl))
+      r=re.compile(matchstr)
+      myprojects = list(filter(r.match, matchcl))
+      #print(myprojects)
+      if len(myprojects) > 0:
+        for project in myprojects:
+          if "gpu" in project:
+            gpustr = " GPU"
+	  else:
+            gpustr = ""
+          pnames=project.split('|')
+     #    #print(pnames)
+	  print("\tYou can use \033[1;33mpreemptable{3}\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17],gpustr))
+
+      # GPU accounts
+      grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster) 
+      #print(grepcmd1)
+      myprojects=capture(grepcmd1).split()
+      if len(myprojects) > 0:
+        for project in myprojects:
+          pnames=project.split('|')
+          #print(pnames)
+          print("\tYou have a \033[1;36mGPU\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
       
-      if Flag: 
-	return True
-      else:  
-        self.error_message+="\tError: All your allocations are invalid"
-      return Flag     
+    if Flag: 
+      print("\tSee https://www.chpc.utah.edu/usage/cluster/current-project-general.php for allocation usage information")
+      return True
+    else:  
+      self.error_message+="\tError: All your allocations are invalid"
+    return Flag     

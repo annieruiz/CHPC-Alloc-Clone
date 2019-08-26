@@ -33,15 +33,19 @@ class SSH_Perm(TestBase):
     st   = os.stat(fn)
 
     # test 600 permission on ~/.ssh/authorized_keys
+    #perm = bool(st.st_mode & ( stat.S_IXUSR |
+    #                           stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP |
+    #                           stat.S_IROTH | stat.S_IWOTH | stat.S_IXOTH ))
+    # CHPC has permissions 644, not 600
     perm = bool(st.st_mode & ( stat.S_IXUSR |
-                               stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP |
-                               stat.S_IROTH | stat.S_IWOTH | stat.S_IXOTH ))
-    
+                               stat.S_IWGRP | stat.S_IXGRP |
+                               stat.S_IWOTH | stat.S_IXOTH ))
     # if the file is not user readable
     perm = perm | (not bool(st.st_mode & stat.S_IRUSR))
     
     # test ownership
     own  = st.st_uid != os.getuid()
+    #print(perm,own,st.st_uid,os.getuid())
     return perm or own
 
   def name(self):
@@ -66,16 +70,17 @@ class SSH_Perm(TestBase):
 
   def execute(self):
     result = True
-
- #  home = os.environ['HOME']
+  
+ # CHPC's HOME is not in /etc/passwd so can't use it 
+    home = os.environ['HOME']
     userid=capture("whoami").rstrip()
  #  grepcmd="grep %s /etc/passwd | cut -d ':' -f6" %userid
-    grepcmd="/bin/awk -F: -v user=%s '$1 == user {print $6}' </etc/passwd" %userid
-    home=capture(grepcmd)
+ #  grepcmd="/bin/awk -F: -v user=%s '$1 == user {print $6}' </etc/passwd" %userid
+ #  home=capture(grepcmd)
     if not home:
         self.error_message+="\tError: Your home directory is inaccessible!\n"
         return False
-    home=home[:-1]
+ #   home=home[:-1]
 
     sshD = os.path.join(home,".ssh")
     dirA = [ home, sshD ]

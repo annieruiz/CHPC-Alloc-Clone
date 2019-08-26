@@ -18,7 +18,7 @@ class Standard_Variables(TestBase):
     return "Check pre-defined variables and corresponding file system accessibility"
 
   def description(self):
-    return "Check environment variables (e.g. HOME, WORK, SCRATCH) and file system access:"
+    return "Check environment variables (e.g. HOME) and file system access:"
 
   def error(self):
     print("\033[1;31m%s\033[0m" %(self.error_message))
@@ -28,13 +28,17 @@ class Standard_Variables(TestBase):
   def execute(self):
     # Different variable are necessary on different machines.
     standardVarT = {
-      'stampede2' : [ "HOME", "WORK", "STOCKYARD", "SCRATCH" ],
-      'ls4'      : [ "HOME", "WORK", "SCRATCH" ],
-      'ls5'      : [ "HOME", "WORK", "STOCKYARD", "SCRATCH" ],
-      'maverick' : [ "HOME", "WORK", "STOCKYARD" ],
+      'kingspeak' : [ "HOME", "UUFSCELL"],
+      'notchpeak' :  [ "HOME"],
+      'lonepeak' :  [ "HOME"],
+      'redwood' :  [ "HOME"],
+      'ember' :  [ "HOME"],
+      'ash' :  [ "HOME"],
+      'frisco' :  [ "HOME"],
       }
 
     host = syshost()
+    #print(host)
     if host in standardVarT.keys():
       varA = standardVarT.get(host, standardVarT[host])
     else:
@@ -57,9 +61,10 @@ class Standard_Variables(TestBase):
       elif( os.path.exists(value) ):
         pass
       else:
-	temp_string="\tError: Your $" + var + " space(" + value + ") is not accessible at this time!\n"
-	self.error_message+=temp_string
-        result=False 	
+        if var != "UUFSCELL":
+          temp_string="\tError: Your $" + var + " space(" + value + ") is not accessible at this time!\n"
+          self.error_message+=temp_string
+          result=False 	
 
 #   fake test, ignore in the practical runs
 #   mypath="/home/01225/siliu/no_exist_dir/"
