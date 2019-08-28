@@ -2,6 +2,9 @@ from __future__ import print_function
 from TestBase   import TestBase
 from util       import run_cmd, capture,syshost
 
+# this test reports disk usage and quota on home file systems
+# it is utilizing a tool that accesses database with this info that is specific to CHPC
+
 class Quota(TestBase):
   
   error_message=""

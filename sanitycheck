@@ -95,6 +95,13 @@ Center for High Performance Computing \n\
   pkg_dir, exec_name = os.path.split(os.path.abspath(sys.argv[0]))
   test_dir           = os.path.join(pkg_dir, "tests")
 
+  # take care of cases where sanitycheck may be a symlink (only one level)
+  if not os.path.exists(test_dir):
+    pkg_dir, exec_name = os.path.split(os.readlink(sys.argv[0]));
+    test_dir           = os.path.join(pkg_dir, "tests")
+  else:
+    print("\nWarning - no tests found")
+
   # (2) Find all *.py file in test directory
   testFnA = files_in_tree(test_dir, "*.py")
   testFnA.sort()

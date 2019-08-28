@@ -4,6 +4,9 @@ from util       import run_cmd, capture,syshost
 from datetime import *
 import re
 
+# this tests reports available SLURM accounts and partitions
+# it is CHPC specific but the group and slurmdb queries should be fairly general
+
 class Allocation(TestBase):
   
   error_message=""
