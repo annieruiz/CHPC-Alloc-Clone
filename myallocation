@@ -6,7 +6,7 @@ import re, sys
 
 host = syshost()
 #print(host)
-if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="redwood"):
+if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood"):
   print("Unkonwn system")
   sys.exit(1)        
 
@@ -34,7 +34,7 @@ myaccts=capture(grepcmd1).split()
 if host=="redwood":
   clusters=["redwood"]
 else:
-  clusters=["kingspeak","notchpeak","ember","lonepeak"]
+  clusters=["kingspeak","notchpeak","ember","lonepeak","ash"]
 for cluster in clusters:
   FCFlag=True
   if cluster=="kingspeak":
@@ -45,6 +45,8 @@ for cluster in clusters:
     cl="em"
   elif cluster=="lonepeak":
     cl="lp"
+  elif cluster=="ash":
+    cl="smithp-ash"
   elif cluster=="redwood":
     cl="rw"
   for group in groups:
@@ -67,13 +69,14 @@ for cluster in clusters:
         print("\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(group,cluster))
         print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
 
-      else:	  
-        myrecord1 = matchcl[0].split('|')
-        #print(myrecord1)
-        if myrecord1[1] == group:
-          print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
+      else:	
+        if len(matchcl)>0:
+          myrecord1 = matchcl[0].split('|')
+          #print(myrecord1)
+          if myrecord1[1] == group:
+            print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
 
-  grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2}".format(userid,cluster,cl) 
+  grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
   #print(grepcmd1)
   myprojects=capture(grepcmd1).split()
   #print(myprojects,len(myprojects))
@@ -86,7 +89,7 @@ for cluster in clusters:
   # owner guest
   # have to get matchcl again since we may have changed it above
   matchcl = [s for s in myaccts if cluster in s]
-  matchstr=".*\\bowner\\.*"
+  matchstr=".*\\bguest\\.*"
  #print(matchstr)
   #print(matchcl, len(matchcl))
   r=re.compile(matchstr)

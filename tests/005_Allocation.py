@@ -32,7 +32,7 @@ class Allocation(TestBase):
   def execute(self):
     host = syshost()
     #print(host)
-    if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="redwood"):
+    if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood"):
       return True
 
     Flag=False
@@ -55,7 +55,7 @@ class Allocation(TestBase):
     if host=="redwood":
       clusters=["redwood"]
     else:
-      clusters=["kingspeak","notchpeak","ember","lonepeak"]
+      clusters=["kingspeak","notchpeak","ember","lonepeak","ash"]
     for cluster in clusters:
 #     grepcmd="grep %s %s" %(userid,projuser_map)
       FCFlag=True
@@ -67,6 +67,8 @@ class Allocation(TestBase):
 	cl="em"
       elif cluster=="lonepeak":
 	cl="lp"
+      elif cluster=="ash":
+        cl="smithp-ash"
       elif cluster=="redwood":
 	cl="rw"
       for group in groups:
@@ -90,11 +92,12 @@ class Allocation(TestBase):
 	    print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
 
 	  else:	  
-            myrecord1 = matchcl[0].split('|')
-            #print(myrecord1)
-            if myrecord1[1] == group:
-              print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
-              Flag=True
+            if len(matchcl)>0:
+              myrecord1 = matchcl[0].split('|')
+              #print(myrecord1)
+              if myrecord1[1] == group:
+                print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
+                Flag=True
 
       # owner nodes 
       # have to get matchcl again since we may have changed it above
@@ -114,7 +117,7 @@ class Allocation(TestBase):
       # the regex above does not match "em" as a single word (perhaps it's due to the filter() function
       # works fine on https://www.regextester.com/
       # so run the sacctmgr command again with grep -w
-      grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2}".format(userid,cluster,cl) 
+      grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl) # need to grep out guest since for ash cl=smithp-ash
       #print(grepcmd1)
       myprojects=capture(grepcmd1).split()
       #print(myprojects,len(myprojects))
@@ -127,7 +130,7 @@ class Allocation(TestBase):
       # owner guest
       # have to get matchcl again since we may have changed it above
       matchcl = [s for s in myaccts if cluster in s]
-      matchstr=".*\\bowner\\.*"
+      matchstr=".*\\bguest\\.*"
      #print(matchstr)
       #print(matchcl, len(matchcl))
       r=re.compile(matchstr)
