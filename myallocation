@@ -1,4 +1,5 @@
-#!/usr/bin/env python  
+#!/usr/bin/python  
+##!/usr/bin/env python  
 
 from util       import run_cmd, capture,syshost
 from datetime import *
@@ -75,6 +76,17 @@ for cluster in clusters:
           #print(myrecord1)
           if myrecord1[1] == group:
             print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
+            print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(group,cluster,cluster+"-shared"))
+
+# shared-short
+  matchgrp = [s for s in myaccts if "shared-short" in s]
+  matchcl = [s for s in matchgrp if cluster in s]
+  if len(matchcl) > 0:
+    matchstr="^((?!{0}).)*$".format(cl)  
+    r=re.compile(matchstr)
+    matchcl = list(filter(r.match, matchcl))
+    pnames=matchcl[0].split('|')
+    print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(cluster,pnames[1]))
 
   grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
   #print(grepcmd1)

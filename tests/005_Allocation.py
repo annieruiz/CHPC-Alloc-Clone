@@ -98,6 +98,17 @@ class Allocation(TestBase):
               if myrecord1[1] == group:
                 print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
                 Flag=True
+                print("\tyou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. account: \033[1;32m{0}\033[0m, partition: \033[1;32m{2}\033[0m".format(group,cluster,cluster+"-shared"))
+
+    # shared-short
+      matchgrp = [s for s in myaccts if "shared-short" in s]
+      matchcl = [s for s in matchgrp if cluster in s]
+      if len(matchcl) > 0:
+        matchstr="^((?!{0}).)*$".format(cl)  
+        r=re.compile(matchstr)
+        matchcl = list(filter(r.match, matchcl))
+        pnames=matchcl[0].split('|')
+        print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(cluster,pnames[1]))
 
       # owner nodes 
       # have to get matchcl again since we may have changed it above
