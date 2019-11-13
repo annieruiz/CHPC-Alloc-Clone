@@ -44,10 +44,6 @@ class Allocation(TestBase):
     #userid="u0413537"
     #userid="u6002243"
 
-    mycmd="groups {0}".format(userid)
-    myout=capture(mycmd).split(":")
-    groups=myout[1].split()
-
     grepcmd1="sacctmgr -n -p show assoc where user={0}".format(userid) 
     #print(grepcmd1)
     myaccts=capture(grepcmd1).split()
@@ -71,34 +67,38 @@ class Allocation(TestBase):
         cl="smithp-ash"
       elif cluster=="redwood":
 	cl="rw"
-      for group in groups:
-	# general allocation
-	matchgrp = [s for s in myaccts if group in s]
-	matchcl = [s for s in matchgrp if cluster in s]
-	#print(matchcl, len(matchcl))
-        if len(matchcl) > 0:
-	  if (len(matchcl) > 1):
-            # this will be true if there are owner nodes
-	    matchstr="^((?!{0}).)*$".format(cl)  
-	    #print(matchstr)
-	    r=re.compile(matchstr)
-	    matchcl = list(filter(r.match, matchcl))
-	    #print(matchcl)
-            #print("Error, more than 1 match: {0}".format(matchcl))
-	  matchfc = [s for s in matchcl if "freecycle" in s]
-	  if len(matchfc) > 0:
-            pnames=matchfc[0].split('|')
-            print("\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(group,cluster))
-	    print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
+      matchcl = [s for s in myaccts if cluster in s]
+      #print(matchcl, len(matchcl))
+      if len(matchcl) > 0:
+        if (len(matchcl) > 1):
+          # first filter out owner accounts
+          # this will be true if there are owner nodes
+          matchstr="^((?!={0}).)*$".format(cl)  
+          #print(matchstr)
+          r=re.compile(matchstr)
+          matchcl = list(filter(r.match, matchcl))
+          #print(matchcl)
+          #print("Error, more than 1 match: {0}".format(matchcl))
+        matchfc = [s for s in matchcl if "freecycle" in s]
+        if len(matchfc) > 0:
+          for matchfc0 in matchfc:
+            pnames=matchfc0.split('|')
+            print("\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(pnames[1],cluster))
+            print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
 
-	  else:	  
-            if len(matchcl)>0:
-              myrecord1 = matchcl[0].split('|')
-              #print(myrecord1)
-              if myrecord1[1] == group:
-                print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(group,cluster))
-                Flag=True
-                print("\tyou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. account: \033[1;32m{0}\033[0m, partition: \033[1;32m{2}\033[0m".format(group,cluster,cluster+"-shared"))
+        # now look at allocated group accounts - so need to exclude owner-guest and freecycle
+        matchg1 = [s for s in matchcl if not "freecycle" in s]
+        matchg2 = [s for s in matchg1 if not "guest" in s]
+        #matchg = [s for s in matchg2 if not "shared-short" in s]
+        matchg = [s for s in matchg2 if not "notchpeak-shared" in s]
+        if len(matchg)>0:
+          #print(matchg)
+          for matchg1 in matchg:
+            #print(matchg1)
+            myrecord1 = matchg1.split('|')
+            print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{1}\033[0m".format(myrecord1[1],cluster))
+            print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(myrecord1[1],cluster,cluster+"-shared"))
+            Flag=True
 
     # shared-short
       matchgrp = [s for s in myaccts if "shared-short" in s]
@@ -110,7 +110,7 @@ class Allocation(TestBase):
         pnames=matchcl[0].split('|')
         print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(cluster,pnames[1]))
 
-      # owner nodes 
+      # owner accounts
       # have to get matchcl again since we may have changed it above
      # matchcl = [s for s in myaccts if cluster in s]
      #matchstr=".*\\b{0}\\.*".format(cl)  
