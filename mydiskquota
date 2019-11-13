@@ -29,6 +29,7 @@ for space in myfs:
       if rawinfo[0]==userid:
         fsuse = rawinfo[5][:-4]
         fsmax = rawinfo[6][:-1]
+        #if ((fsmax != 0) and (float(fsuse)/float(fsmax) > 0.9)):
         if (float(fsuse)/float(fsmax) > 0.9):
           fscolor=badcolor
         else:
