@@ -24,10 +24,6 @@ else:
 #userid="u0413537"
 #userid="u6002243"
 
-mycmd="groups {0}".format(userid)
-myout=capture(mycmd).split(":")
-groups=myout[1].split()
-
 grepcmd1="sacctmgr -n -p show assoc where user={0}".format(userid) 
 #print(grepcmd1)
 myaccts=capture(grepcmd1).split()
@@ -75,8 +71,9 @@ for cluster in clusters:
     # now look at allocated group accounts - so need to exclude owner-guest and freecycle
     matchg1 = [s for s in matchcl if not "freecycle" in s]
     matchg2 = [s for s in matchg1 if not "guest" in s]
+    matchg3 = [s for s in matchg1 if not "collab" in s]
     #matchg = [s for s in matchg2 if not "shared-short" in s]
-    matchg = [s for s in matchg2 if not "notchpeak-shared" in s]
+    matchg = [s for s in matchg3 if not "notchpeak-shared" in s]
     if len(matchg)>0:
       #print(matchg)
       for matchg1 in matchg:
@@ -104,8 +101,23 @@ for cluster in clusters:
   if len(myprojects) > 0:
     for project in myprojects:
       pnames=project.split('|')
+      pgroup=pnames[17].split('-')
       #print(pnames)
       print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
+      print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pgroup[0]+"-shared-"+pgroup[1]))
+
+  # collab accounts
+  grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
+  #print(grepcmd1)
+  myprojects=capture(grepcmd1).split()
+  #print(myprojects,len(myprojects))
+  if len(myprojects) > 0:
+    for project in myprojects:
+      pnames=project.split('|')
+      pgroup=pnames[17].split('-')
+      #print(pnames)
+      print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pgroup[0]+"-"+cl))
+      print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pgroup[0]+"-shared-"+cl))
 
   # owner guest
   # have to get matchcl again since we may have changed it above
