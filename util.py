@@ -19,12 +19,17 @@ def run_cmd(cmd):
 import platform
 
 def syshost():
-# hostA = platform.node().split('.')
-  hostlong = capture("hostname --long")
-  hostA = hostlong.split('.')
-  idx = 0 # MC changed from 1 to 0
-  if (len(hostA) < 2):
-    idx = 0
-#  print re.sub(r'\d+', '',hostA[idx])
+  uufscell = os.getenv('UUFSCELL')
+
+  if not uufscell:
+    hostlong = capture("hostname --long")
+    hostA = hostlong.split('.')
+    idx = 0 # MC changed from 1 to 0
+    if (len(hostA) < 2):
+      idx = 0
+  else:
+    hostA = uufscell.split('.')
+    idx = 0;
+
 # MC also strip digits from the hostname
   return re.sub(r'\d+', '',hostA[idx])
