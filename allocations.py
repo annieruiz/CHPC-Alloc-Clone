@@ -71,6 +71,7 @@ def allocations():
           #print(pnames)
           print("\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(pnames[1],cluster))
           print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pnames[17]))
+          print("\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],cluster+"-shared-freecycle"))
   
       # now look at allocated group accounts - so need to exclude owner-guest and freecycle
       matchg1 = [s for s in matchcl if not "freecycle" in s]
