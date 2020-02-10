@@ -51,7 +51,7 @@ def allocations():
     elif cluster=="redwood":
       cl="rw"
     matchcl = [s for s in myaccts if cluster in s]
-    #print(matchcl, len(matchcl))
+    print(matchcl, len(matchcl))
     if len(matchcl) > 0:
       if (len(matchcl) > 1):
         # first filter out owner accounts
@@ -78,8 +78,10 @@ def allocations():
       #print(matchg1)
       matchg2 = [s for s in matchg1 if not "guest" in s]
       matchg3 = [s for s in matchg2 if not "collab" in s]
+      # also filter out gpu accounts
+      matchg4 = [s for s in matchg3 if not "gpu" in s]
       #matchg = [s for s in matchg2 if not "shared-short" in s]
-      matchg = [s for s in matchg3 if not "notchpeak-shared" in s]
+      matchg = [s for s in matchg4 if not "notchpeak-shared" in s]
       if len(matchg)>0:
         #print(matchg)
         for matchg1 in matchg:
