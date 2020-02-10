@@ -51,7 +51,7 @@ def allocations():
     elif cluster=="redwood":
       cl="rw"
     matchcl = [s for s in myaccts if cluster in s]
-    print(matchcl, len(matchcl))
+    #print(matchcl, len(matchcl))
     if len(matchcl) > 0:
       if (len(matchcl) > 1):
         # first filter out owner accounts
