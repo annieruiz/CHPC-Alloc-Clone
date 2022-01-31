@@ -1,4 +1,4 @@
-#!/usr/bin/python  
+#!/usr/bin/python2
 
 from util       import run_cmd, capture,syshost
 from allocations import allocations

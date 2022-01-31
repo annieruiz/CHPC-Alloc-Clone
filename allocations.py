@@ -5,7 +5,7 @@ import re, sys
 def allocations():
   host = syshost()
   #print(host)
-  if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood"):
+  if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
     print("This command needs to run on one of the CHPC clusters")
     sys.exit(1)        
   
@@ -34,6 +34,8 @@ def allocations():
   #print(myaccts,len(myaccts))
   if host=="redwood":
     clusters=["redwood"]
+  elif host=="crystalpeak":
+    clusters=["crystalpeak"]
   else:
     clusters=["kingspeak","notchpeak","lonepeak","ash"]
   for cluster in clusters:
@@ -50,6 +52,8 @@ def allocations():
       cl="smithp-ash"
     elif cluster=="redwood":
       cl="rw"
+    elif cluster=="crystalpeak":
+      cl="cp"
     matchcl = [s for s in myaccts if cluster in s]
     #print(matchcl, len(matchcl))
     if len(matchcl) > 0:
