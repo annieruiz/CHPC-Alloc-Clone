@@ -4,12 +4,12 @@ import re
 
 def capture(cmd):
   p = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, shell=True)
-  return p.communicate()[0]
+  return p.communicate()[0].decode()
 
 def captureErr(cmd):
   FNULL = open(os.devnull, 'w')
   p = subprocess.Popen(cmd, stdout=FNULL,  stderr=subprocess.PIPE, shell=True)
-  return p.communicate()[1]
+  return p.communicate()[1].decode()
 
 def run_cmd(cmd):
   return subprocess.call(cmd, shell=True)
