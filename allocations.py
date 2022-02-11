@@ -93,7 +93,7 @@ def allocations():
           myrecord1 = matchg1.split('|')
           #print(myrecord1)
           print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(myrecord1[1],cluster,myrecord1[18]))
-	  if (myrecord1[1] != "dtn"): # account dtn that matches here does not have shared partition
+          if (myrecord1[1] != "dtn"): # account dtn that matches here does not have shared partition
             print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(myrecord1[1],cluster,cluster+"-shared"))
   
   # shared-short
