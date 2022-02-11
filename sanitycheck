@@ -80,10 +80,10 @@ Center for High Performance Computing \n\
   for o, a in opts:
     if o in ("-h", "--help"):
         print("Sanitytool Version: ",vstr)
-	print(help_message)
+        print(help_message)
         sys.exit()
     if o in ("-v", "--verbose"):
-	silent_flag=False
+        silent_flag=False
     if o in ("-s", "--silent"):
         silent_flag=True
    
@@ -151,9 +151,9 @@ Center for High Performance Computing \n\
   for entry in testA:
     
     if silent_flag:
-	pass
+        pass
     else:
-	print("%3d: %s" %(entry['num'], entry['test'].description()))
+        print("%3d: %s" %(entry['num'], entry['test'].description()))
 	
     result = entry['test'].execute()
 
@@ -163,10 +163,10 @@ Center for High Performance Computing \n\
         entry['test'].error()
         entry['test'].help()
     else:
-	if silent_flag:
-		pass
-	else:
-          print("\033[1;32m\tPassed\n\033[0m")
+        if silent_flag:
+            pass
+        else:
+            print("\033[1;32m\tPassed\n\033[0m")
   
 #########################################################################
 #  Summarize Results
