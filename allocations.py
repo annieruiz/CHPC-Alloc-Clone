@@ -124,7 +124,7 @@ def allocations():
         grepcmd2="scontrol -M {1} -o show partition | grep {0} | grep -v shared".format(qosname,cluster)
         #print(grepcmd2)
         myparts=capture(grepcmd2).split()
-	if len(myparts) > 0:
+        if len(myparts) > 0:
           #print(myparts,len(myparts))
           #print(myparts[0])
           mypart=myparts[0].split('=')
@@ -132,7 +132,7 @@ def allocations():
           pgroup=mypart[1].split('-')
           print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],mypart[1]))
           print("\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],pgroup[0]+"-shared-"+pgroup[1]))
-	else:
+        else:
           print("\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(qosname))
           
   
