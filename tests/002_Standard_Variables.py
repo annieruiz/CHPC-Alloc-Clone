@@ -47,7 +47,7 @@ class Standard_Variables(TestBase):
       return
  
     if not varA:
-	return True
+      return True
 
     result = True
     unknown = "**UNKNOWN**"
@@ -55,8 +55,8 @@ class Standard_Variables(TestBase):
     for var in varA:
       value = os.environ.get(var,unknown)
       if (value == unknown):
-	temp_string="\tError: Your $"+var+" is not defined.\n"
-	self.error_message+=temp_string
+        temp_string="\tError: Your $"+var+" is not defined.\n"
+        self.error_message+=temp_string
         result = False
       elif( os.path.exists(value) ):
         pass
