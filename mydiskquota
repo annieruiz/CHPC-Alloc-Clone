@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-##!/usr/bin/env python  
+#!/usr/bin/env python  
 
 from util       import run_cmd, capture,syshost
 from diskquota import diskquota
