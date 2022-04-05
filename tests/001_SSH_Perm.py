@@ -97,7 +97,7 @@ class SSH_Perm(TestBase):
     a = self.__write_group_other_test(home)
     for entry in a:
       if (entry['value']):
-	result = False
+        result = False
         self.error_message+="\tError: "+entry['name']+ " permission on $HOME will cause RSA to fail!\n"	  
 #remove entry['name'] in the Error message on July 22, 2015  
  

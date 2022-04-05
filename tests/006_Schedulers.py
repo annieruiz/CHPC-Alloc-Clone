@@ -40,5 +40,5 @@ class Schedulers(TestBase):
         output=capture(typecmd)
         if "not found" in output:
           Flag=False
-	  self.error_message+="\tError: Scheduler command \"%s\" is not available at this time!\n" %command1
+          self.error_message+="\tError: Scheduler command \"%s\" is not available at this time!\n" %command1
       return Flag     
