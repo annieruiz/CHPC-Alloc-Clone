@@ -1,11 +1,13 @@
 from util       import run_cmd, capture,syshost
 from datetime import *
 import re, sys
+import shutil
 
 def allocations():
   host = syshost()
   #print(host)
-  if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
+  # if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
+  if shutil.which('sinfo') is None:
     print("This command needs to run on one of the CHPC clusters")
     sys.exit(1)        
   
@@ -36,6 +38,10 @@ def allocations():
     clusters=["redwood"]
   elif host=="crystalpeak":
     clusters=["crystalpeak"]
+  elif "ondemand" in host:
+    clusters=["kingspeak","notchpeak","lonepeak","ash","redwood","crystalpeak","scrubpeak"]
+  elif host=="scrubpeak":
+    clusters=["scrubpeak"]
   else:
     clusters=["kingspeak","notchpeak","lonepeak","ash"]
   for cluster in clusters:
@@ -54,6 +60,8 @@ def allocations():
       cl="rw"
     elif cluster=="crystalpeak":
       cl="cp"
+    elif cluster=="scrubpeak":
+      cl="sp"
     matchcl = [s for s in myaccts if cluster in s]
     #print(matchcl, len(matchcl))
     if len(matchcl) > 0:
