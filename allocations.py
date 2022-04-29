@@ -39,7 +39,9 @@ def allocations():
   elif host=="crystalpeak":
     clusters=["crystalpeak"]
   elif host=="ondemand":
-    clusters=["kingspeak","notchpeak","lonepeak","ash","redwood","crystalpeak"]
+    clusters=["kingspeak","notchpeak","lonepeak","ash","redwood","crystalpeak","scrubpeak"]
+  elif host=="scrubpeak":
+    clusters=["scrubpeak"]
   else:
     clusters=["kingspeak","notchpeak","lonepeak","ash"]
   for cluster in clusters:
@@ -58,6 +60,8 @@ def allocations():
       cl="rw"
     elif cluster=="crystalpeak":
       cl="cp"
+    elif cluster=="scrubpeak":
+      cl="sp"
     matchcl = [s for s in myaccts if cluster in s]
     #print(matchcl, len(matchcl))
     if len(matchcl) > 0:
