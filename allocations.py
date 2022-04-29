@@ -38,7 +38,7 @@ def allocations():
     clusters=["redwood"]
   elif host=="crystalpeak":
     clusters=["crystalpeak"]
-  elif host=="ondemand":
+  elif "ondemand" in host:
     clusters=["kingspeak","notchpeak","lonepeak","ash","redwood","crystalpeak","scrubpeak"]
   elif host=="scrubpeak":
     clusters=["scrubpeak"]
