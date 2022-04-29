@@ -1,6 +1,6 @@
 from util       import run_cmd, capture,syshost
 from datetime import *
-import re, sys
+import re, sys, os
 import shutil
 
 def allocations():
@@ -8,9 +8,12 @@ def allocations():
   #print(host)
   # if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
   if shutil.which('sinfo') is None:
-    print("This command needs to run on one of the CHPC clusters")
-    sys.exit(1)        
-  
+    if "ondemand" not in host:
+      print("This command needs to run on one of the CHPC clusters")
+      sys.exit(1)        
+    else:
+      os.environ["PATH"] += os.pathsep + "/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin"
+
   # primitive argument input for userid - no error checking
   if len(sys.argv)==2:
     userid=sys.argv[1]
