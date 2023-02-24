@@ -1,8 +1,10 @@
-#!/usr/bin/env python  
+#!/usr/bin/python3
 
 from util       import run_cmd, capture,syshost
 from diskquota import diskquota
+from diskquota_vast import diskquota_vast
 from datetime import *
 import re, sys
 
 diskquota()
+diskquota_vast()

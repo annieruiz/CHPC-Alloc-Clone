@@ -8,11 +8,14 @@ def allocations():
   #print(host)
   # if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
   if shutil.which('sinfo') is None:
-    if "ondemand" not in host:
-      print("This command needs to run on one of the CHPC clusters")
-      sys.exit(1)        
-    else:
+    # first query for pe-ondemand since ondemand in host will be true there too and no notchpeak sys branch in the PE
+    if host=="redwood" or host=='pe-ondemand':
+      os.environ["PATH"] += os.pathsep + "/uufs/redwood.bridges/sys/installdir/slurm/std/bin"
+    elif "ondemand" in host:
       os.environ["PATH"] += os.pathsep + "/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin"
+    else:
+      print("This command needs to run on one of the CHPC clusters")
+      sys.exit(1)
 
   # primitive argument input for userid - no error checking
   if len(sys.argv)==2:
@@ -23,7 +26,7 @@ def allocations():
   #userid="u1119546"
   #userid="u0631741"
   # redwood tests
-  #userid="u6000771"
+  #userid="u6000771" XX
   #userid="u0413537"
   #userid="u6002243"
   
@@ -41,6 +44,8 @@ def allocations():
     clusters=["redwood"]
   elif host=="crystalpeak":
     clusters=["crystalpeak"]
+  elif host=="pe-ondemand":
+    clusters=["redwood"]
   elif "ondemand" in host:
     clusters=["kingspeak","notchpeak","lonepeak","ash","redwood","crystalpeak","scrubpeak"]
   elif host=="scrubpeak":
@@ -118,10 +123,28 @@ def allocations():
       print("\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(cluster,pnames[1]))
   
     # owner accounts
-    grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
+    # filter out owner accounts via Python list wrangling
+    #matchown1 = [s for s in myaccts if any(xs in s for xs in [cluster, cl])]
+    matchown1 = [s for s in myaccts if cluster in s]
+    matchown2 = [s for s in matchown1 if cl in s]
+    myprojects = [s for s in matchown2 if not "guest" in s]
+    #print("matchown3")
+    #print(matchown3,len(matchown3))
+    # old logic with extra sacctmgr call
+    #grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
     #print(grepcmd1)
-    myprojects=capture(grepcmd1).split()
+    #print("myprojects")
+    #myprojects=capture(grepcmd1).split()
     #print(myprojects,len(myprojects))
+    grepcmd2="scontrol -M {0} -o show partition | grep -v shared".format(cluster)
+    #print(grepcmd2)
+    #allparts1=capture(grepcmd2)
+    #print(allparts1)
+    allparts=capture(grepcmd2).splitlines()
+    #print(allparts)
+    #testparts = subprocess.run(grepcmd2, stdout=subprocess.PIPE).stdout.decode('utf-8')
+    #print(testparts)
+
     if len(myprojects) > 0:
       for project in myprojects:
         pnames=project.split('|')
@@ -132,11 +155,17 @@ def allocations():
         # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
         if len(pnames[18]) == 0:
           qosname = pnames[17]
-        grepcmd2="scontrol -M {1} -o show partition | grep {0} | grep -v shared".format(qosname,cluster)
+        #print(qosname)
+        #grepcmd2="scontrol -M {1} -o show partition | grep {0} | grep -v shared".format(qosname,cluster)
         #print(grepcmd2)
-        myparts=capture(grepcmd2).split()
-        if len(myparts) > 0:
+        #myparts=capture(grepcmd2).split()
+        #print("myparts")
+        #print(myparts,len(myparts))
+        matchown1 = [s for s in allparts if qosname in s]
+        if len(matchown1) > 0:
+          myparts = matchown1[0].split()
           #print(myparts,len(myparts))
+
           #print(myparts[0])
           mypart=myparts[0].split('=')
           #print(mypart[1])
@@ -148,10 +177,16 @@ def allocations():
           
   
     # collab accounts
-    grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
-    #print(grepcmd1)
-    myprojects=capture(grepcmd1).split()
-    #print(myprojects,len(myprojects))
+    matchown1 = [s for s in myaccts if cluster in s]
+    matchown2 = [s for s in matchown1 if "collab" in s]
+    myprojects = [s for s in matchown2 if not "guest" in s]
+   # print("matchown3")
+   # print(matchown3,len(matchown3))
+   # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
+   # print(grepcmd1)
+   # myprojects=capture(grepcmd1).split()
+   # print("myprojects")
+   # print(myprojects,len(myprojects))
     if len(myprojects) > 0:
       for project in myprojects:
         pnames=project.split('|')
@@ -181,9 +216,16 @@ def allocations():
         print("\tYou can use \033[1;33mpreemptable{3}\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(cluster,pnames[1],part[0],gpustr))
   
     # GPU accounts
-    grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster) 
+    matchown1 = [s for s in myaccts if cluster in s]
+    matchown2 = [s for s in matchown1 if "gpu" in s]
+    myprojects = [s for s in matchown2 if not "guest" in s]
+    #print("matchown3")
+    #print(matchown3,len(matchown3))
+    #grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster) 
     #print(grepcmd1)
-    myprojects=capture(grepcmd1).split()
+    #myprojects=capture(grepcmd1).split()
+    #print("myprojects")
+    #print(myprojects,len(myprojects))
     if len(myprojects) > 0:
       for project in myprojects:
         pnames=project.split('|')
