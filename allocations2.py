@@ -132,7 +132,7 @@ def allocations():
                             cluster, p_names[1], cluster + "-shared-freecycle"))
 
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
-            matchg1 = [s for s in matchcl if not "freecycle" in s]
+            matchg1 = [s for s in match_cl if not "freecycle" in s]
             # print(matchg1)
             matchg2 = [s for s in matchg1 if not "guest" in s]
             matchg3 = [s for s in matchg2 if not "collab" in s]
@@ -156,12 +156,12 @@ def allocations():
 
         # shared-short
         matchgrp = [s for s in myaccts if "shared-short" in s]
-        matchcl = [s for s in matchgrp if cluster in s]
-        if len(matchcl) > 0:
+        match_cl = [s for s in matchgrp if cluster in s]
+        if len(match_cl) > 0:
             matchstr = "^((?!{0}).)*$".format(cl)
             r = re.compile(matchstr)
-            matchcl = list(filter(r.match, matchcl))
-            p_names = matchcl[0].split('|')
+            match_cl = list(filter(r.match, match_cl))
+            p_names = match_cl[0].split('|')
             print(
                 "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(
                     cluster, p_names[1]))
@@ -249,13 +249,13 @@ def allocations():
                         cluster, p_names[1], pgroup[0] + "-shared-" + cl))
 
         # owner guest
-        # have to get matchcl again since we may have changed it above
-        matchcl = [s for s in myaccts if cluster in s]
+        # have to get match_cl again since we may have changed it above
+        match_cl = [s for s in myaccts if cluster in s]
         matchstr = ".*\\bguest\\.*"
         # print(matchstr)
-        # print(matchcl, len(matchcl))
+        # print(match_cl, len(match_cl))
         r = re.compile(matchstr)
-        myprojects = list(filter(r.match, matchcl))
+        myprojects = list(filter(r.match, match_cl))
         # print(myprojects)
         if len(myprojects) > 0:
             for project in myprojects:
