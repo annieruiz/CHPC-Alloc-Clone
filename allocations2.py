@@ -127,10 +127,10 @@ def allocations():
                     # print(p_names)
                     print(f"\tYour group \033[1;31m{p_names[1]}\033[0m does not have a \033[1;36mgeneral\033[0m "
                           f"\033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m")
-                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. "
-                          f"Account: \033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{p_names[17]}\033[0m")
-                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. "
-                          f"Account: \033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{cluster}-shared-freecycle\033[0m")
+                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. Account: "
+                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{p_names[17]}\033[0m")
+                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. Account: "
+                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{cluster}-shared-freecycle\033[0m")
 
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
             match_g1 = [s for s in match_cl if "freecycle" not in s]
@@ -140,48 +140,45 @@ def allocations():
             # also filter out gpu accounts
             match_g4 = [s for s in match_g3 if "gpu" not in s]
             # match_g = [s for s in match_g2 if not "shared-short" in s]
-            match_g = [s for s in match_g4 if not "notchpeak-shared" in s]
+            match_g = [s for s in match_g4 if "notchpeak-shared" not in s]
 
             if match_g:
                 # print(match_g)
                 for match_g1 in match_g:
                     # print(match_g1)
-                    myrecord1 = match_g1.split('|')
-                    # print(myrecord1)
-                    print(
-                        "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            myrecord1[1], cluster, myrecord1[18]))
-                    if (myrecord1[1] != "dtn"):  # account dtn that matches here does not have shared partition
-                        print(
-                            "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                myrecord1[1], cluster, cluster + "-shared"))
+                    my_record = match_g1.split('|')
+                    # print(my_record)
+                    print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                          f"\033[1;32m{my_record[1]}\033[0m, Partition: \033[1;32m{my_record[18]}\033[0m")
+                    if my_record[1] != "dtn":  # account dtn that matches here does not have shared partition
+                        print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. "
+                              f"Account: \033[1;32m{my_record[1]}\033[0m, Partition: \033[1;32m{cluster}-shared\033[0m")
 
         # shared-short
-        matchgrp = [s for s in my_accts if "shared-short" in s]
-        match_cl = [s for s in matchgrp if cluster in s]
+        match_grp = [s for s in my_accts if "shared-short" in s]
+        match_cl = [s for s in match_grp if cluster in s]
         if len(match_cl) > 0:
-            matchstr = "^((?!{0}).)*$".format(cl)
-            r = re.compile(matchstr)
+            match_str = "^((?!{0}).)*$".format(cl_)
+            r = re.compile(match_str)
             match_cl = list(filter(r.match, match_cl))
             p_names = match_cl[0].split('|')
-            print(
-                "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(
-                    cluster, p_names[1]))
+            print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                  f"\033[1;32m{1}\033[0m, Partition: \033[1;32m{p_names[1]}\033[0m")
 
         # owner accounts
         # filter out owner accounts via Python list wrangling
-        # matchown1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if cl in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        # match_own1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
+        match_own1 = [s for s in my_accts if cluster in s]
+        match_own2 = [s for s in match_own1 if cl_ in s]
+        my_projects = [s for s in match_own2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
         # print(grep_cmd1)
-        # print("myprojects")
-        # myprojects=capture(grep_cmd1).split()
-        # print(myprojects,len(myprojects))
+        # print("my_projects")
+        # my_projects=capture(grep_cmd1).split()
+        # print(my_projects,len(my_projects))
         grepcmd2 = "scontrol -M {0} -o show partition | grep -v shared".format(cluster)
         # print(grepcmd2)
         # allparts1=capture(grepcmd2)
@@ -191,8 +188,8 @@ def allocations():
         # testparts = subprocess.run(grepcmd2, stdout=subprocess.PIPE).stdout.decode('utf-8')
         # print(testparts)
 
-        if len(myprojects) > 0:
-            for project in myprojects:
+        if len(my_projects) > 0:
+            for project in my_projects:
                 p_names = project.split('|')
                 # print(pnames)
                 # MC 1/24/20 - using scontrol to grep for partition that corresponds to the QOS in pnames[18]
@@ -207,9 +204,9 @@ def allocations():
                 # myparts=capture(grepcmd2).split()
                 # print("myparts")
                 # print(myparts,len(myparts))
-                matchown1 = [s for s in allparts if qosname in s]
-                if len(matchown1) > 0:
-                    myparts = matchown1[0].split()
+                match_own1 = [s for s in allparts if qosname in s]
+                if len(match_own1) > 0:
+                    myparts = match_own1[0].split()
                     # print(myparts,len(myparts))
 
                     # print(myparts[0])
@@ -228,18 +225,18 @@ def allocations():
                             qosname))
 
         # collab accounts
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if "collab" in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_own1 = [s for s in my_accts if cluster in s]
+        match_own2 = [s for s in match_own1 if "collab" in s]
+        my_projects = [s for s in match_own2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
         # print(grep_cmd1)
-        # myprojects=capture(grep_cmd1).split()
-        # print("myprojects")
-        # print(myprojects,len(myprojects))
-        if len(myprojects) > 0:
-            for project in myprojects:
+        # my_projects=capture(grep_cmd1).split()
+        # print("my_projects")
+        # print(my_projects,len(my_projects))
+        if len(my_projects) > 0:
+            for project in my_projects:
                 p_names = project.split('|')
                 pgroup = p_names[17].split('-')
                 # print(pnames)
@@ -253,14 +250,14 @@ def allocations():
         # owner guest
         # have to get match_cl again since we may have changed it above
         match_cl = [s for s in my_accts if cluster in s]
-        matchstr = ".*\\bguest\\.*"
-        # print(matchstr)
+        match_str = ".*\\bguest\\.*"
+        # print(match_str)
         # print(match_cl, len(match_cl))
-        r = re.compile(matchstr)
-        myprojects = list(filter(r.match, match_cl))
-        # print(myprojects)
-        if len(myprojects) > 0:
-            for project in myprojects:
+        r = re.compile(match_str)
+        my_projects = list(filter(r.match, match_cl))
+        # print(my_projects)
+        if len(my_projects) > 0:
+            for project in my_projects:
                 if "gpu" in project:
                     gpustr = " GPU"
                 else:
@@ -273,18 +270,18 @@ def allocations():
                         cluster, p_names[1], part[0], gpustr))
 
         # GPU accounts
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if "gpu" in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_own1 = [s for s in my_accts if cluster in s]
+        match_own2 = [s for s in match_own1 if "gpu" in s]
+        my_projects = [s for s in match_own2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
         # print(grep_cmd1)
-        # myprojects=capture(grep_cmd1).split()
-        # print("myprojects")
-        # print(myprojects,len(myprojects))
-        if len(myprojects) > 0:
-            for project in myprojects:
+        # my_projects=capture(grep_cmd1).split()
+        # print("my_projects")
+        # print(my_projects,len(my_projects))
+        if len(my_projects) > 0:
+            for project in my_projects:
                 p_names = project.split('|')
                 # print(pnames)
                 print(
