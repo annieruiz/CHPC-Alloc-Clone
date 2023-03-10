@@ -170,7 +170,7 @@ def allocations():
         # match_own1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
         match_own1 = [s for s in my_accts if cluster in s]
         match_own2 = [s for s in match_own1 if cl_ in s]
-        my_projects = [s for s in match_own2 if not "guest" in s]
+        my_projects = [s for s in match_own2 if"guest" not in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
@@ -188,7 +188,7 @@ def allocations():
         # testparts = subprocess.run(grepcmd2, stdout=subprocess.PIPE).stdout.decode('utf-8')
         # print(testparts)
 
-        if len(my_projects) > 0:
+        if my_projects:
             for project in my_projects:
                 p_names = project.split('|')
                 # print(pnames)
@@ -208,26 +208,22 @@ def allocations():
                 if len(match_own1) > 0:
                     myparts = match_own1[0].split()
                     # print(myparts,len(myparts))
-
                     # print(myparts[0])
                     mypart = myparts[0].split('=')
                     # print(mypart[1])
                     pgroup = mypart[1].split('-')
-                    print(
-                        "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, p_names[1], mypart[1]))
-                    print(
-                        "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, p_names[1], pgroup[0] + "-shared-" + pgroup[1]))
+                    print(f"\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{mypart[1]}\033[0m")
+                    print(f"\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{pgroup[0]}-shared-{pgroup[1]}\033[0m")
                 else:
-                    print(
-                        "\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(
-                            qosname))
+                    print(f"\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition "
+                          f"\033[1;32m{qosname}\033[0m does not exist. Please contact CHPC to fix this.")
 
         # collab accounts
         match_own1 = [s for s in my_accts if cluster in s]
         match_own2 = [s for s in match_own1 if "collab" in s]
-        my_projects = [s for s in match_own2 if not "guest" in s]
+        my_projects = [s for s in match_own2 if "guest" not in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
@@ -235,17 +231,15 @@ def allocations():
         # my_projects=capture(grep_cmd1).split()
         # print("my_projects")
         # print(my_projects,len(my_projects))
-        if len(my_projects) > 0:
+        if my_projects:
             for project in my_projects:
                 p_names = project.split('|')
                 pgroup = p_names[17].split('-')
                 # print(pnames)
-                print(
-                    "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                        cluster, p_names[1], pgroup[0] + "-" + cl))
-                print(
-                    "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                        cluster, p_names[1], pgroup[0] + "-shared-" + cl))
+                print(f"\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                      f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{pgroup[0]}-{cl_}\033[0m")
+                print(f"\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                      f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{pgroup[0]}-shared-{cl}\033[0m")
 
         # owner guest
         # have to get match_cl again since we may have changed it above
@@ -256,7 +250,7 @@ def allocations():
         r = re.compile(match_str)
         my_projects = list(filter(r.match, match_cl))
         # print(my_projects)
-        if len(my_projects) > 0:
+        if my_projects:
             for project in my_projects:
                 if "gpu" in project:
                     gpustr = " GPU"
@@ -265,9 +259,8 @@ def allocations():
                 p_names = project.split('|')
                 part = p_names[17].split(',')
                 #    #print(pnames)
-                print(
-                    "\tYou can use \033[1;33mpreemptable{3}\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                        cluster, p_names[1], part[0], gpustr))
+                print(f"\tYou can use \033[1;33mpreemptable{gpustr}\033[0m mode on \033[1;34m{cluster}\033[0m. "
+                      f"Account: \033[1;32m{p_names}\033[0m, Partition: \033[1;32m{part[0]}\033[0m")
 
         # GPU accounts
         match_own1 = [s for s in my_accts if cluster in s]
@@ -284,6 +277,5 @@ def allocations():
             for project in my_projects:
                 p_names = project.split('|')
                 # print(pnames)
-                print(
-                    "\tYou have a \033[1;36mGPU\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                        cluster, p_names[1], p_names[17]))
+                print(f"\tYou have a \033[1;36mGPU\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
+                      f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{p_names[17]}\033[0m")
