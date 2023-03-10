@@ -1,4 +1,4 @@
-from util       import run_cmd, capture,syshost
+from util import run_cmd, capture,syshost
 from datetime import *
 import re, sys, os
 import shutil
@@ -39,6 +39,9 @@ def allocations():
   grepcmd1="sacctmgr -n -p show assoc where user={0}".format(userid) 
   #print(grepcmd1)
   myaccts=capture(grepcmd1).split()
+
+
+
   #print(myaccts,len(myaccts))
   if host=="redwood":
     clusters=["redwood"]

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from util       import run_cmd, capture,syshost
-from allocations import allocations
+from allocations2 import allocations
 from datetime import *
 import re, sys
 
