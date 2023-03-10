@@ -39,10 +39,8 @@ def allocations():
   grepcmd1="sacctmgr -n -p show assoc where user={0}".format(userid) 
   #print(grepcmd1)
   myaccts=capture(grepcmd1).split()
-
-
-
   #print(myaccts,len(myaccts))
+
   if host=="redwood":
     clusters=["redwood"]
   elif host=="crystalpeak":

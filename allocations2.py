@@ -3,6 +3,7 @@ from datetime import *
 import re, sys, os
 import shutil
 
+
 class Cluster:
     def __init__(self, clusters):
         self.clusters = clusters
@@ -13,10 +14,10 @@ class Cluster:
 
 
 # Create objects for each of the clusters by name. This will include their paths, clusters, etc.
-redwood = Cluster("redwood")
-crystalpeak = Cluster("crystalpeak")
+redwood = Cluster(["redwood"])
+crystalpeak = Cluster(["crystalpeak"])
 ondemand = Cluster(["kingspeak", "notchpeak", "lonepeak", "ash", "redwood", "crystalpeak", "scrubpeak"])
-scrubpeak = Cluster("scrubpeak")
+scrubpeak = Cluster(["scrubpeak"])
 # ???? probably rename 'other', just not sure what it is right now.
 other = Cluster(["kingspeak", "notchpeak", "lonepeak", "ash"])
 
@@ -32,7 +33,7 @@ hosts = {
     "crystalpeak": crystalpeak,
     "scrubpeak": scrubpeak,
     "other": other
-    }
+}
 
 cl = {
     "kingspeak": "kp",
@@ -44,6 +45,7 @@ cl = {
     "crystalpeak": "cp",
     "scrubpeak": "sp"
 }
+
 
 def allocations():
     h = syshost()
@@ -85,24 +87,24 @@ def allocations():
 
     """
     MC Jan 20
-    A potentially cleaner version may be to create a list of account-QOS associations with 'sacctmgr' and then
-    compare QOS from each of the association to the 'scontrol -o show partition' output to get the corresponding
-    partition. 'scontrol' can be run only once with result stored in an array so that it's not run repeatedly.
-    'sacctmgr -p show qos' lists what QOSes can this one preempt (Preempt = column 4), so we can see if
-    preempt-able QOS is in this output, which would mean that it's preempt-able
+    A potentially cleaner version may be to create a list of account-QOS associations with 'sacctmgr' and then compare
+    QOS from each of the association to the 'scontrol -o show partition' output to get the corresponding partition.
+    'scontrol' can be run only once with result stored in an array so that it's not run repeatedly. 
+    'sacctmgr -p show qos' lists what QOSes can this one preempt (Preempt = column 4), so we can see if preempt-able
+    QOS is in this output, which would mean that it's preempt-able
     """
 
-    grepcmd1 = "sacctmgr -n -p show assoc where user={0}".format(userid)
-    # print(grepcmd1)
-    myaccts = capture(grepcmd1).split()
-    # print(myaccts,len(myaccts))
+    grep_cmd1 = "sacctmgr -n -p show assoc where user={0}".format(userid)
+    # print(grep_cmd1)
+    my_accts = capture(grep_cmd1).split()
+    # print(my_accts,len(my_accts))
 
     clusters = host.clusters
 
     for cluster in clusters:
         FCFlag = True
         cl_ = cl[cluster]
-        match_cl = [s for s in myaccts if cluster in s]
+        match_cl = [s for s in my_accts if cluster in s]
 
         # print(match_cl, len(match_cl))
 
@@ -116,35 +118,35 @@ def allocations():
                 # print(match_cl)
                 # print("Error, more than 1 match: {0}".format(match_cl))
 
-            # now filter out the freecycle accounts
+            # now filter out the free-cycle accounts
             match_fc = [s for s in match_cl if "freecycle" in s]
             if match_fc:
                 # print(match_fc)
                 for match_fc0 in match_fc:
                     p_names = match_fc0.split('|')
                     # print(p_names)
-                    print(f"\tYour group \033[1;31m{p_names[1]}\033[0m does not have a "
+                    print(f"\tYour group \033[1;31m{p_names[1]}\033[0m does not have a \033[1;36mgeneral\033[0m "
                           f"\033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m")
                     print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. "
                           f"Account: \033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{p_names[17]}\033[0m")
-                    print(
-                        "\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, p_names[1], cluster + "-shared-freecycle"))
+                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. "
+                          f"Account: \033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{cluster}-shared-freecycle\033[0m")
 
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
-            matchg1 = [s for s in match_cl if not "freecycle" in s]
-            # print(matchg1)
-            matchg2 = [s for s in matchg1 if not "guest" in s]
-            matchg3 = [s for s in matchg2 if not "collab" in s]
+            match_g1 = [s for s in match_cl if "freecycle" not in s]
+            # print(match_g1)
+            match_g2 = [s for s in match_g1 if "guest" not in s]
+            match_g3 = [s for s in match_g2 if "collab" not in s]
             # also filter out gpu accounts
-            matchg4 = [s for s in matchg3 if not "gpu" in s]
-            # matchg = [s for s in matchg2 if not "shared-short" in s]
-            matchg = [s for s in matchg4 if not "notchpeak-shared" in s]
-            if len(matchg) > 0:
-                # print(matchg)
-                for matchg1 in matchg:
-                    # print(matchg1)
-                    myrecord1 = matchg1.split('|')
+            match_g4 = [s for s in match_g3 if "gpu" not in s]
+            # match_g = [s for s in match_g2 if not "shared-short" in s]
+            match_g = [s for s in match_g4 if not "notchpeak-shared" in s]
+
+            if match_g:
+                # print(match_g)
+                for match_g1 in match_g:
+                    # print(match_g1)
+                    myrecord1 = match_g1.split('|')
                     # print(myrecord1)
                     print(
                         "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
@@ -155,7 +157,7 @@ def allocations():
                                 myrecord1[1], cluster, cluster + "-shared"))
 
         # shared-short
-        matchgrp = [s for s in myaccts if "shared-short" in s]
+        matchgrp = [s for s in my_accts if "shared-short" in s]
         match_cl = [s for s in matchgrp if cluster in s]
         if len(match_cl) > 0:
             matchstr = "^((?!{0}).)*$".format(cl)
@@ -168,17 +170,17 @@ def allocations():
 
         # owner accounts
         # filter out owner accounts via Python list wrangling
-        # matchown1 = [s for s in myaccts if any(xs in s for xs in [cluster, cl])]
-        matchown1 = [s for s in myaccts if cluster in s]
+        # matchown1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if cl in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
-        # print(grepcmd1)
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
+        # print(grep_cmd1)
         # print("myprojects")
-        # myprojects=capture(grepcmd1).split()
+        # myprojects=capture(grep_cmd1).split()
         # print(myprojects,len(myprojects))
         grepcmd2 = "scontrol -M {0} -o show partition | grep -v shared".format(cluster)
         # print(grepcmd2)
@@ -226,14 +228,14 @@ def allocations():
                             qosname))
 
         # collab accounts
-        matchown1 = [s for s in myaccts if cluster in s]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if "collab" in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
-        # print(grepcmd1)
-        # myprojects=capture(grepcmd1).split()
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
+        # print(grep_cmd1)
+        # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
@@ -250,7 +252,7 @@ def allocations():
 
         # owner guest
         # have to get match_cl again since we may have changed it above
-        match_cl = [s for s in myaccts if cluster in s]
+        match_cl = [s for s in my_accts if cluster in s]
         matchstr = ".*\\bguest\\.*"
         # print(matchstr)
         # print(match_cl, len(match_cl))
@@ -271,14 +273,14 @@ def allocations():
                         cluster, p_names[1], part[0], gpustr))
 
         # GPU accounts
-        matchown1 = [s for s in myaccts if cluster in s]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if "gpu" in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
-        # print(grepcmd1)
-        # myprojects=capture(grepcmd1).split()
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
+        # print(grep_cmd1)
+        # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
@@ -288,4 +290,3 @@ def allocations():
                 print(
                     "\tYou have a \033[1;36mGPU\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
                         cluster, p_names[1], p_names[17]))
-
