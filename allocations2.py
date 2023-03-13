@@ -1,38 +1,28 @@
-from util import run_cmd, capture, syshost
-from datetime import *
-import re, sys, os
+import os
+import re
 import shutil
+import sys
+import logging
 
+from util import capture, syshost
 
-class Cluster:
-    def __init__(self, clusters):
-        self.clusters = clusters
-        self.path = ""
+# basic configuration for the logging system for debugging
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-    def addPath(self, path):
-        self.path = path
-
-
-# Create objects for each of the clusters by name. This will include their paths, clusters, etc.
-redwood = Cluster(["redwood"])
-crystalpeak = Cluster(["crystalpeak"])
-ondemand = Cluster(["kingspeak", "notchpeak", "lonepeak", "ash", "redwood", "crystalpeak", "scrubpeak"])
-scrubpeak = Cluster(["scrubpeak"])
-# ???? probably rename 'other', just not sure what it is right now.
-other = Cluster(["kingspeak", "notchpeak", "lonepeak", "ash"])
-
-# add sinfo paths to redwood, and ondemand
-redwood.addPath("/uufs/redwood.bridges/sys/installdir/slurm/std/bin")
-ondemand.addPath("/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin")
-
-hosts = {
-    "redwood": redwood,
-    "ondemand": ondemand,
+# Create objects for each of the clusters by name.
+clusters_ = {
+    "redwood": ["redwood"],
+    "ondemand": ["kingspeak", "notchpeak", "lonepeak", "ash", "redwood", "crystalpeak", "scrubpeak"],
     # first query for pe-ondemand since ondemand in host will be true there too & no notchpeak sys branch in the PE
-    "pe-ondemand": redwood,
-    "crystalpeak": crystalpeak,
-    "scrubpeak": scrubpeak,
-    "other": other
+    "pe-ondemand": ["redwood"],
+    "crystalpeak": ["crystalpeak"],
+    "scrubpeak": ["scrubpeak"],
+    "other": ["kingspeak", "notchpeak", "lonepeak", "ash"]
+}
+
+path = {
+    "redwood": "/uufs/redwood.bridges/sys/installdir/slurm/std/bin",
+    "ondemand": "/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin"
 }
 
 cl = {
@@ -46,37 +36,56 @@ cl = {
     "scrubpeak": "sp"
 }
 
+""""
+FREQUENTLY USED STRINGS
+put them in their own method for ease of readability in the rest of the code.
+"""
+def string_no_gen_alloc(pname_, cluster_):
+    return (f"\tYour group \033[1;31m{pname_}\033[0m does not have a"
+            f"\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m")
+
+def string_preemptable_mode_on(cluster_, acct_, partition_):
+    return (f"\tYou can use\033[1;33m preemptable\033[0m mode on \033[1;34m{cluster_}\033[0m. "
+            f"Account: \033[1;32m{acct_}\033[0m, Partition: \033[1;32m{partition_}\033[0m")
+
+def string_gen_alloc(cluster_, acct_, partition_):
+    str_ = ""
+    for p in partition_:
+        str_ += (f"\tYou have a\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m. "
+                f"Account: \033[1;32m{acct_}\033[0m, Partition: \033[1;32m{partition_}\033[0m") + "\n"
+    return str_
+
 
 def allocations():
-    h = syshost()
-    if h in hosts:
-        host = hosts[h]
-        # print(f"syshost = {h}")
+    host = syshost()
+    if host in clusters_:
+        clusters = clusters_[host]
+        logging.debug(f"syshost = {host}")
     else:
-        if "ondemand" in h:
-            host = hosts["ondemand"]
-            # print(f"host is ondemand:  syshost = {h}")
+        if "ondemand" in host:
+            clusters = clusters_["ondemand"]
+            logging.debug(f"host is ondemand:  syshost = {host}")
         else:
-            host = hosts["other"]
-            # print(f"host is 'other':   syshost = {h}")
+            clusters = clusters_["other"]
+            logging.debug(f"host is 'other':   syshost = {host}")
 
     """
      'shutil.which' returns the path to an exec which would be run if 'sinfo' was called. 
      'sinfo' returns information about the resources on the available nodes that make up the HPC cluster.
      """
     if shutil.which('sinfo') is None:
-        if host.path == "":
+        if path[host]:     # os.environ["PATH"] is the equivalent to getenv("PATH") in C.
+            os.environ["PATH"] += os.pathsep + path[host]
+        else:
             print("This command needs to run on one of the CHPC clusters")
             sys.exit(1)
-        else:
-            # os.environ["PATH"] is the equivalent to getenv("PATH") in C.
-            os.environ["PATH"] += os.pathsep + host.path
 
     # primitive argument input for userid - no error checking
     if len(sys.argv) == 2:
         userid = sys.argv[1]
     else:
         userid = capture("whoami").rstrip()
+    logging.debug(f"userid: {userid}")
 
     # userid="u1119546"
     # userid="u0631741"
@@ -94,85 +103,78 @@ def allocations():
     QOS is in this output, which would mean that it's preempt-able
     """
 
-    grep_cmd1 = "sacctmgr -n -p show assoc where user={0}".format(userid)
-    # print(grep_cmd1)
+    grep_cmd1 = f"sacctmgr -n -p show assoc where user={userid}"
+    logging.debug(f"grep_cmd: {grep_cmd1}")
     my_accts = capture(grep_cmd1).split()
-    # print(my_accts,len(my_accts))
-
-    clusters = host.clusters
+    logging.debug(f"myaccts: {my_accts}, length: {len(my_accts)}")
 
     for cluster in clusters:
         FCFlag = True
         cl_ = cl[cluster]
         match_cl = [s for s in my_accts if cluster in s]
-
-        # print(match_cl, len(match_cl))
+        logging.debug(f"match_cl: {match_cl}, length: {len(match_cl)}")
 
         if match_cl:
             # first filter out owner accounts, this will be true if there are owner nodes
             if len(match_cl) > 1:
+                logging.debug("multiple owners. We will filter out owner accounts.")
                 match_str = "^((?!-{0}).)*$".format(cl_)
-                # print(match_str)
+                logging.debug(f"match string: {match_str}")
                 r = re.compile(match_str)
                 match_cl = list(filter(r.match, match_cl))
-                # print(match_cl)
-                # print("Error, more than 1 match: {0}".format(match_cl))
+                logging.debug(match_cl)
 
             # now filter out the free-cycle accounts
             match_fc = [s for s in match_cl if "freecycle" in s]
             if match_fc:
-                # print(match_fc)
+                logging.debug(f"match_fc: {match_fc}")
+
                 for match_fc0 in match_fc:
                     p_names = match_fc0.split('|')
-                    # print(p_names)
-                    print(f"\tYour group \033[1;31m{p_names[1]}\033[0m does not have a \033[1;36mgeneral\033[0m "
-                          f"\033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m")
-                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. Account: "
-                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{p_names[17]}\033[0m")
-                    print(f"\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{cluster}\033[0m. Account: "
-                          f"\033[1;32m{p_names[1]}\033[0m, Partition: \033[1;32m{cluster}-shared-freecycle\033[0m")
+                    logging.debug(f"p_names: {p_names}")
+                    print(string_no_gen_alloc(p_names[1], cluster))
+                    print(string_preemptable_mode_on(cluster, p_names[1], p_names[17]))
+                    print(string_preemptable_mode_on(cluster, p_names[1], cluster + "-shared-freecycle"))
 
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
             match_g1 = [s for s in match_cl if "freecycle" not in s]
-            # print(match_g1)
-            match_g2 = [s for s in match_g1 if "guest" not in s]
-            match_g3 = [s for s in match_g2 if "collab" not in s]
-            # also filter out gpu accounts
-            match_g4 = [s for s in match_g3 if "gpu" not in s]
-            # match_g = [s for s in match_g2 if not "shared-short" in s]
-            match_g = [s for s in match_g4 if "notchpeak-shared" not in s]
+            logging.debug(f"match_g1: {match_g1}")
+            filter_list = ["guest", "collab", "gpu", "notchpeak-shared"]
+            # filter out gpu accounts, guest accounts, collab accts, and notchpeak-shared accts
+            match_g = [s for s in match_g1 if not any(x in filter_list for x in s)]
+            logging.debug(f"match_g: {match_g}")
 
-            if match_g:
-                # print(match_g)
-                for match_g1 in match_g:
-                    # print(match_g1)
-                    my_record = match_g1.split('|')
-                    # print(my_record)
-                    print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
-                          f"\033[1;32m{my_record[1]}\033[0m, Partition: \033[1;32m{my_record[18]}\033[0m")
-                    if my_record[1] != "dtn":  # account dtn that matches here does not have shared partition
-                        print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. "
-                              f"Account: \033[1;32m{my_record[1]}\033[0m, Partition: \033[1;32m{cluster}-shared\033[0m")
+            for match_g1 in match_g:
+                my_record = match_g1.split('|')
+                logging.debug(f"match_g1: {match_g1}, my_record:{my_record}")
+
+                partitions = [my_record[18]]
+                if my_record[1] == "dtn":   # account dtn that matches here has shared partition
+                    partitions.append(cluster + "-shared")
+
+                print(string_gen_alloc(cluster, my_record[1], partitions))
 
         # shared-short
-        match_grp = [s for s in my_accts if "shared-short" in s]
-        match_cl = [s for s in match_grp if cluster in s]
-        if len(match_cl) > 0:
+        #match_grp = [s for s in my_accts if "shared-short" in s]
+        #match_cl = [s for s in match_grp if cluster in s]
+
+        # matches all accounts that have 'shared-short' and cluster in my_accts
+        match_cl = [s for s in my_accts if all(x in ["shared-short", cluster] for x in s)]
+        if match_cl:
             match_str = "^((?!{0}).)*$".format(cl_)
             r = re.compile(match_str)
             match_cl = list(filter(r.match, match_cl))
             p_names = match_cl[0].split('|')
-            print(f"\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{cluster}\033[0m. Account: "
-                  f"\033[1;32m{1}\033[0m, Partition: \033[1;32m{p_names[1]}\033[0m")
+            print(string_gen_alloc(cluster, p_names[1], p_names[1]))
 
-        # owner accounts
-        # filter out owner accounts via Python list wrangling
+        """
+        OWNER ACCOUNTS
+        filters out the owner accounts via Python list wrangling.
+        """
         # match_own1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
         match_own1 = [s for s in my_accts if cluster in s]
         match_own2 = [s for s in match_own1 if cl_ in s]
         my_projects = [s for s in match_own2 if"guest" not in s]
-        # print("matchown3")
-        # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
         # print(grep_cmd1)
