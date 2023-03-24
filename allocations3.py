@@ -2,18 +2,17 @@
 allocations3 will contain more slow, incremental changes, to know why allocations2.py isn't working
 """
 
-import os
-import re
+from util import run_cmd, capture, syshost
+from datetime import *
+import re, sys, os
 import shutil
-import sys
-import util
 import logging
 
 # basic configuration for the logging system for debugging
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 def allocations():
-    host = util.syshost()
+    host = syshost()
     # print(host)
     # if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
     if shutil.which('sinfo') is None:
@@ -31,11 +30,11 @@ def allocations():
     if len(sys.argv) == 2:
         if sys.argv[1] in ("-t", "--terse"):
             terse = True
-            userid = util.capture("whoami").rstrip()
+            userid = capture("whoami").rstrip()
         else:
             userid = sys.argv[1]
     else:
-        userid = util.capture("whoami").rstrip()
+        userid = capture("whoami").rstrip()
 
     # userid="u1119546"
     # userid="u0631741"
@@ -52,7 +51,7 @@ def allocations():
 
     grepcmd1 = "sacctmgr -n -p show assoc where user={0}".format(userid)
     # print(grepcmd1)
-    myaccts = util.capture(grepcmd1).split()
+    myaccts = capture(grepcmd1).split()
     # print(myaccts,len(myaccts))
     if host == "redwood":
         clusters = ["redwood"]
@@ -182,7 +181,7 @@ def allocations():
         # print(grepcmd2)
         # allparts1=capture(grepcmd2)
         # print(allparts1)
-        allparts = util.capture(grepcmd2).splitlines()
+        allparts = capture(grepcmd2).splitlines()
         # print(allparts)
         # testparts = subprocess.run(grepcmd2, stdout=subprocess.PIPE).stdout.decode('utf-8')
         # print(testparts)
