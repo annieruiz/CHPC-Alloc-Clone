@@ -1,8 +1,12 @@
 #!/usr/bin/python3
 
 from util       import run_cmd, capture,syshost
-from allocations3 import allocations
+import allocations as alloc
+import allocations3 as alloc3
 from datetime import *
 import re, sys
-
-allocations()
+print("ORIG ALLOCATIONS:")
+alloc.allocations()
+print()
+print("ALLOCATIONS3:")
+alloc3.allocations()
