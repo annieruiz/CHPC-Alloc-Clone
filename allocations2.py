@@ -80,9 +80,14 @@ def allocations():
             print("This command needs to run on one of the CHPC clusters")
             sys.exit(1)
 
+    terse = False
     # primitive argument input for userid - no error checking
     if len(sys.argv) == 2:
-        userid = sys.argv[1]
+        if sys.argv[1] in ("-t", "--terse"):
+            terse = True
+            userid = capture("whoami").rstrip()
+        else:
+            userid = sys.argv[1]
     else:
         userid = capture("whoami").rstrip()
     logging.debug(f"userid: {userid}")
@@ -106,7 +111,7 @@ def allocations():
     grep_cmd1 = f"sacctmgr -n -p show assoc where user={userid}"
     logging.debug(f"grep_cmd: {grep_cmd1}")
     my_accts = capture(grep_cmd1).split()
-    logging.debug(f"myaccts: {my_accts}, length: {len(my_accts)}")
+    logging.debug(f"my_accts: {my_accts}, length: {len(my_accts)}")
 
     for cluster in clusters:
         FCFlag = True
@@ -114,6 +119,7 @@ def allocations():
         match_cl = [s for s in my_accts if cluster in s]
         logging.debug(f"match_cl: {match_cl}, length: {len(match_cl)}")
 
+        # ------ general/freecycle accounts -------------------
         if match_cl:
             # first filter out owner accounts, this will be true if there are owner nodes
             if len(match_cl) > 1:
@@ -132,14 +138,19 @@ def allocations():
                 for match_fc0 in match_fc:
                     p_names = match_fc0.split('|')
                     logging.debug(f"p_names: {p_names}")
-                    print(string_no_gen_alloc(p_names[1], cluster))
-                    print(string_preemptable_mode_on(cluster, p_names[1], p_names[17]))
-                    print(string_preemptable_mode_on(cluster, p_names[1], cluster + "-shared-freecycle"))
+                    if terse:
+                        print(f"{cluster} {p_names[1]} : {p_names[17]}")
+                        print(f"{cluster} {p_names[1]} : {cluster}-shared-freecycle")
+                    else:
+                        print(string_no_gen_alloc(p_names[1], cluster))
+                        print(string_preemptable_mode_on(cluster, p_names[1], p_names[17]))
+                        print(string_preemptable_mode_on(cluster, p_names[1], cluster + "-shared-freecycle"))
 
+            # ------------------- freecycle accounts -------------------
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
             match_g1 = [s for s in match_cl if "freecycle" not in s]
             logging.debug(f"match_g1: {match_g1}")
-            filter_list = ["guest", "collab", "gpu", "notchpeak-shared"]
+            filter_list = ["guest", "collab", "gpu", "eval", "shared-short", "notchpeak-shared"]
             # filter out gpu accounts, guest accounts, collab accts, and notchpeak-shared accts
             match_g = [s for s in match_g1 if not any(x in filter_list for x in s)]
             logging.debug(f"match_g: {match_g}")
@@ -155,8 +166,8 @@ def allocations():
                 print(string_gen_alloc(cluster, my_record[1], partitions))
 
         # shared-short
-        #match_grp = [s for s in my_accts if "shared-short" in s]
-        #match_cl = [s for s in match_grp if cluster in s]
+        match_grp = [s for s in my_accts if "shared-short" in s]
+        match_cl = [s for s in match_grp if cluster in s]
 
         # matches all accounts that have 'shared-short' and cluster in my_accts
         match_cl = [s for s in my_accts if all(x in ["shared-short", cluster] for x in s)]

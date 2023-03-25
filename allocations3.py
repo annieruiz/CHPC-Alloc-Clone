@@ -2,25 +2,64 @@
 allocations3 will contain more slow, incremental changes, to know why allocations2.py isn't working
 """
 
-from util import run_cmd, capture, syshost
-from datetime import *
-import re, sys, os
-import shutil
 import logging
+import os
+import re
+import shutil
+import sys
+from util import capture, syshost
+
+# Create objects for each of the clusters by name.
+clusters_ = {
+    "redwood": ["redwood"],
+    "ondemand": ["kingspeak", "notchpeak", "lonepeak", "ash", "redwood", "crystalpeak", "scrubpeak"],
+    # first query for pe-ondemand since ondemand in host will be true there too & no notchpeak sys branch in the PE
+    "pe-ondemand": ["redwood"],
+    "crystalpeak": ["crystalpeak"],
+    "scrubpeak": ["scrubpeak"],
+    "other": ["kingspeak", "notchpeak", "lonepeak", "ash"]
+}
+
+path = {
+    "redwood": "/uufs/redwood.bridges/sys/installdir/slurm/std/bin",
+    "ondemand": "/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin"
+}
+
+cl_ = {
+    "kingspeak": "kp",
+    "notchpeak": "np",
+    "ember": "em",
+    "lonepeak": "lp",
+    "ash": "smithp-ash",
+    "redwood": "rw",
+    "crystalpeak": "cp",
+    "scrubpeak": "sp"
+}
+
 
 # basic configuration for the logging system for debugging
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 def allocations():
     host = syshost()
-    # print(host)
-    # if (host!="kingspeak")and(host!="ember")and(host!="lonepeak")and(host!="notchpeak")and(host!="ash")and(host!="redwood")and(host!="crystalpeak"):
+    if host in clusters_:
+        clusters = clusters_[host]
+        logging.debug(f"syshost = {host}")
+    else:
+        if "ondemand" in host:
+            clusters = clusters_["ondemand"]
+            logging.debug(f"host is ondemand:  syshost = {host}")
+        else:
+            clusters = clusters_["other"]
+            logging.debug(f"host is 'other':   syshost = {host}")
+
+    """
+     'shutil.which' returns the path to an exec which would be run if 'sinfo' was called. 
+     'sinfo' returns information about the resources on the available nodes that make up the HPC cluster.
+     """
     if shutil.which('sinfo') is None:
-        # first query for pe-ondemand since ondemand in host will be true there too and no notchpeak sys branch in the PE
-        if host == "redwood" or host == 'pe-ondemand':
-            os.environ["PATH"] += os.pathsep + "/uufs/redwood.bridges/sys/installdir/slurm/std/bin"
-        elif "ondemand" in host:
-            os.environ["PATH"] += os.pathsep + "/uufs/notchpeak.peaks/sys/installdir/slurm/std/bin"
+        if path[host]:     # os.environ["PATH"] is the equivalent to getenv("PATH") in C.
+            os.environ["PATH"] += os.pathsep + path[host]
         else:
             print("This command needs to run on one of the CHPC clusters")
             sys.exit(1)
@@ -35,6 +74,7 @@ def allocations():
             userid = sys.argv[1]
     else:
         userid = capture("whoami").rstrip()
+    logging.debug(f"userid: {userid}")
 
     # userid="u1119546"
     # userid="u0631741"
@@ -43,67 +83,45 @@ def allocations():
     # userid="u0413537"
     # userid="u6002243"
 
-    # MC Jan 20
-    # potentially cleaner version may be to create a list of account-QOS associations with sacctmgr
-    # and then compare QOS from each of the association to the "scontrol -o show partition" output to get the corresponding partition
-    # the scontrol can be run only once with result stored in an array so that it's not run repeatedly
-    # sacctmgr -p show qos lists what QOSes can this one preempt (Preempt = column 4), can see if preemptable QOS is in this output which would mean that it's preemptable
+    """
+    MC Jan 20
+    A potentially cleaner version may be to create a list of account-QOS associations with 'sacctmgr' and then compare
+    QOS from each of the association to the 'scontrol -o show partition' output to get the corresponding partition.
+    'scontrol' can be run only once with result stored in an array so that it's not run repeatedly. 
+    'sacctmgr -p show qos' lists what QOSes can this one preempt (Preempt = column 4), so we can see if preempt-able
+    QOS is in this output, which would mean that it's preempt-able
+    """
 
-    grepcmd1 = "sacctmgr -n -p show assoc where user={0}".format(userid)
-    # print(grepcmd1)
-    myaccts = capture(grepcmd1).split()
-    # print(myaccts,len(myaccts))
-    if host == "redwood":
-        clusters = ["redwood"]
-    elif host == "crystalpeak":
-        clusters = ["crystalpeak"]
-    elif host == "pe-ondemand":
-        clusters = ["redwood"]
-    elif "ondemand" in host:
-        clusters = ["kingspeak", "notchpeak", "lonepeak", "ash", "redwood", "crystalpeak", "scrubpeak"]
-    elif host == "scrubpeak":
-        clusters = ["scrubpeak"]
-    else:
-        clusters = ["kingspeak", "notchpeak", "lonepeak", "ash"]
+    grep_cmd1 = f"sacctmgr -n -p show assoc where user={userid}"
+    logging.debug(f"grep_cmd: {grep_cmd1}")
+    my_accts = capture(grep_cmd1).split()
+    logging.debug(f"my_accts: {my_accts}, length: {len(my_accts)}")
+
     for cluster in clusters:
         FCFlag = True
-        if cluster == "kingspeak":
-            cl = "kp"
-        elif cluster == "notchpeak":
-            cl = "np"
-        elif cluster == "ember":
-            cl = "em"
-        elif cluster == "lonepeak":
-            cl = "lp"
-        elif cluster == "ash":
-            cl = "smithp-ash"
-        elif cluster == "redwood":
-            cl = "rw"
-        elif cluster == "crystalpeak":
-            cl = "cp"
-        elif cluster == "scrubpeak":
-            cl = "sp"
+        cl = cl_[cluster]
         matchcl = [s for s in myaccts if cluster in s]
-        # print(matchcl, len(matchcl))
+        logging.debug(f"match_cl: {match_cl}, length: {len(match_cl)}")
 
         # ------ general/freecycle accounts -------------------
-        if len(matchcl) > 0:
-            if (len(matchcl) > 1):
-                # first filter out owner accounts
-                # this will be true if there are owner nodes
+        if matchcl:
+            # first filter out owner accounts, this will be true if there are owner nodes
+            if len(matchcl) > 1:
+                logging.debug("multiple owners. We will filter out owner accounts.")
                 matchstr = "^((?!-{0}).)*$".format(cl)
-                # print(matchstr)
+                logging.debug(f"match string: {matchstr}")
                 r = re.compile(matchstr)
                 matchcl = list(filter(r.match, matchcl))
-                # print(matchcl)
-                # print("Error, more than 1 match: {0}".format(matchcl))
+                logging.debug(match_cl)
+
             # ------ freecycle accounts -------------------
             matchfc = [s for s in matchcl if "freecycle" in s]
-            if len(matchfc) > 0:
-                # print(matchfc)
+            if matchfc:
+                logging.debug(f"matchfc: {matchfc}")
+
                 for matchfc0 in matchfc:
                     pnames = matchfc0.split('|')
-                    # print(pnames)
+                    logging.debug(f"pnames: {pnames}")
                     if terse:
                         print("{0} {1}:{2}".format(cluster, pnames[1], pnames[17]))
                         print("{0} {1}:{2}".format(cluster, pnames[1], cluster + "-shared-freecycle"))
@@ -120,8 +138,10 @@ def allocations():
 
             # ------ freecycle accounts -------------------
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
-            matchg1 = [s for s in matchcl if not "freecycle" in s]
-            # print(matchg1)
+            matchg1 = [s for s in matchcl if "freecycle" not in s]
+            logging.debug(f"matchg1: {matchg1}")
+            filter_list = ["guest", "collab", "gpu", "eval", "shared-short", "notchpeak-shared"]
+            # filter out gpu accounts, guest accounts, collab accts, eval, shared-short, and notchpeak-shared accts
             matchg2 = [s for s in matchg1 if not "guest" in s]
             matchg3 = [s for s in matchg2 if not "collab" in s]
             # also filter out gpu accounts
@@ -172,10 +192,10 @@ def allocations():
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
-        # print(grepcmd1)
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,cl)  # need to grep out guest since for ash cl=smithp-ash
+        # print(grep_cmd1)
         # print("myprojects")
-        # myprojects=capture(grepcmd1).split()
+        # myprojects=capture(grep_cmd1).split()
         # print(myprojects,len(myprojects))
         grepcmd2 = "scontrol -M {0} -o show partition | grep -v shared".format(cluster)
         # print(grepcmd2)
@@ -260,9 +280,9 @@ def allocations():
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
-        # print(grepcmd1)
-        # myprojects=capture(grepcmd1).split()
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
+        # print(grep_cmd1)
+        # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
@@ -312,9 +332,9 @@ def allocations():
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
-        # grepcmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
-        # print(grepcmd1)
-        # myprojects=capture(grepcmd1).split()
+        # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
+        # print(grep_cmd1)
+        # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
