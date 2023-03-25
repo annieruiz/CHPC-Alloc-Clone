@@ -36,6 +36,11 @@ cl_ = {
     "scrubpeak": "sp"
 }
 
+def string_no_gen_alloc(pname_, cluster_):
+    return (f"\tYour group \033[1;31m{pname_}\033[0m does not have a"
+            f"\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m")
+
+
 
 # basic configuration for the logging system for debugging
 logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
@@ -100,45 +105,43 @@ def allocations():
     for cluster in clusters:
         FCFlag = True
         cl = cl_[cluster]
-        matchcl = [s for s in myaccts if cluster in s]
+        match_cl = [s for s in my_accts if cluster in s]
         logging.debug(f"match_cl: {match_cl}, length: {len(match_cl)}")
 
         # ------ general/freecycle accounts -------------------
-        if matchcl:
+        if match_cl:
             # first filter out owner accounts, this will be true if there are owner nodes
-            if len(matchcl) > 1:
+            if len(match_cl) > 1:
                 logging.debug("multiple owners. We will filter out owner accounts.")
-                matchstr = "^((?!-{0}).)*$".format(cl)
-                logging.debug(f"match string: {matchstr}")
-                r = re.compile(matchstr)
-                matchcl = list(filter(r.match, matchcl))
+                match_str = "^((?!-{0}).)*$".format(cl)
+                logging.debug(f"match string: {match_str}")
+                r = re.compile(match_str)
+                match_cl = list(filter(r.match, match_cl))
                 logging.debug(match_cl)
 
             # ------ freecycle accounts -------------------
-            matchfc = [s for s in matchcl if "freecycle" in s]
-            if matchfc:
-                logging.debug(f"matchfc: {matchfc}")
+            match_fc = [s for s in match_cl if "freecycle" in s]
+            if match_fc:
+                logging.debug(f"matchfc: {match_fc}")
 
-                for matchfc0 in matchfc:
-                    pnames = matchfc0.split('|')
-                    logging.debug(f"pnames: {pnames}")
+                for match_fc0 in match_fc:
+                    p_names = match_fc0.split('|')
+                    logging.debug(f"pnames: {p_names}")
                     if terse:
-                        print("{0} {1}:{2}".format(cluster, pnames[1], pnames[17]))
-                        print("{0} {1}:{2}".format(cluster, pnames[1], cluster + "-shared-freecycle"))
+                        print("{0} {1}:{2}".format(cluster, p_names[1], p_names[17]))
+                        print("{0} {1}:{2}".format(cluster, p_names[1], cluster + "-shared-freecycle"))
                     else:
-                        print(
-                            "\tYour group \033[1;31m{0}\033[0m does not have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m".format(
-                                pnames[1], cluster))
+                        print(string_no_gen_alloc(p_names[1], cluster))
                         print(
                             "\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, pnames[1], pnames[17]))
+                                cluster, p_names[1], p_names[17]))
                         print(
                             "\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, pnames[1], cluster + "-shared-freecycle"))
+                                cluster, p_names[1], cluster + "-shared-freecycle"))
 
             # ------ freecycle accounts -------------------
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
-            matchg1 = [s for s in matchcl if "freecycle" not in s]
+            matchg1 = [s for s in match_cl if "freecycle" not in s]
             logging.debug(f"matchg1: {matchg1}")
             filter_list = ["guest", "collab", "gpu", "eval", "shared-short", "notchpeak-shared"]
             # filter out gpu accounts, guest accounts, collab accts, eval, shared-short, and notchpeak-shared accts
@@ -169,24 +172,24 @@ def allocations():
                                     myrecord1[1], cluster, cluster + "-shared"))
 
         # ------ shared-short accounts -------------------
-        matchgrp = [s for s in myaccts if "shared-short" in s]
-        matchcl = [s for s in matchgrp if cluster in s]
-        if len(matchcl) > 0:
-            matchstr = "^((?!{0}).)*$".format(cl)
-            r = re.compile(matchstr)
-            matchcl = list(filter(r.match, matchcl))
-            pnames = matchcl[0].split('|')
+        matchgrp = [s for s in my_accts if "shared-short" in s]
+        match_cl = [s for s in matchgrp if cluster in s]
+        if len(match_cl) > 0:
+            match_str = "^((?!{0}).)*$".format(cl)
+            r = re.compile(match_str)
+            match_cl = list(filter(r.match, match_cl))
+            p_names = match_cl[0].split('|')
             if terse:
-                print("{0} {1}:{1}".format(cluster, pnames[1]))
+                print("{0} {1}:{1}".format(cluster, p_names[1]))
             else:
                 print(
                     "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(
-                        cluster, pnames[1]))
+                        cluster, p_names[1]))
 
         # ------ owner accounts -------------------
         # filter out owner accounts via Python list wrangling
-        # matchown1 = [s for s in myaccts if any(xs in s for xs in [cluster, cl])]
-        matchown1 = [s for s in myaccts if cluster in s]
+        # matchown1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if cl in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
@@ -208,14 +211,14 @@ def allocations():
 
         if len(myprojects) > 0:
             for project in myprojects:
-                pnames = project.split('|')
+                p_names = project.split('|')
                 # print(pnames)
                 # MC 1/24/20 - using scontrol to grep for partition that corresponds to the QOS in pnames[18]
                 # example user that had QOS vs partition mix up - u6022494
-                qosname = pnames[18]
+                qosname = p_names[18]
                 # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
-                if len(pnames[18]) == 0:
-                    qosname = pnames[17]
+                if len(p_names[18]) == 0:
+                    qosname = p_names[17]
                 # print(qosname)
                 # grepcmd2="scontrol -M {1} -o show partition | grep {0} | grep -v shared".format(qosname,cluster)
                 # print(grepcmd2)
@@ -232,50 +235,50 @@ def allocations():
                     # print(mypart[1])
                     pgroup = mypart[1].split('-')
                     if terse:
-                        print("{0} {1}:{2}".format(cluster, pnames[1], mypart[1]))
-                        print("{0} {1}:{2}".format(cluster, pnames[1], pgroup[0] + "-shared-" + pgroup[1]))
+                        print("{0} {1}:{2}".format(cluster, p_names[1], mypart[1]))
+                        print("{0} {1}:{2}".format(cluster, p_names[1], pgroup[0] + "-shared-" + pgroup[1]))
                     else:
                         print(
                             "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, pnames[1], mypart[1]))
+                                cluster, p_names[1], mypart[1]))
                         print(
                             "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, pnames[1], pgroup[0] + "-shared-" + pgroup[1]))
+                                cluster, p_names[1], pgroup[0] + "-shared-" + pgroup[1]))
                 else:
                     print(
                         "\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(
                             qosname))
 
         # ------ eval accounts -------------------
-        matchown1 = [s for s in myaccts if cluster in s]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if "eval" in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print(myprojects)
         if len(myprojects) > 0:
             for project in myprojects:
-                pnames = project.split('|')
-                qosname = pnames[18]
+                p_names = project.split('|')
+                qosname = p_names[18]
                 # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
-                if len(pnames[18]) == 0:
-                    qosname = pnames[17]
+                if len(p_names[18]) == 0:
+                    qosname = p_names[17]
                 matchown1 = [s for s in allparts if qosname in s]
                 if len(matchown1) > 0:
                     myparts = matchown1[0].split()
                     mypart = myparts[0].split('=')
                     pgroup = mypart[1].split('-')
                     if terse:
-                        print("{0} {1}:{2}".format(cluster, pnames[1], mypart[1]))
+                        print("{0} {1}:{2}".format(cluster, p_names[1], mypart[1]))
                     else:
                         print(
                             "\tYou have an \033[1;36mevaluation\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, pnames[1], mypart[1]))
+                                cluster, p_names[1], mypart[1]))
                 else:
                     print(
                         "\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(
                             qosname))
 
         # ------ collab accounts -------------------
-        matchown1 = [s for s in myaccts if cluster in s]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if "collab" in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
@@ -287,28 +290,28 @@ def allocations():
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
             for project in myprojects:
-                pnames = project.split('|')
-                pgroup = pnames[17].split('-')
+                p_names = project.split('|')
+                pgroup = p_names[17].split('-')
                 # print(pnames)
                 if terse:
-                    print("{0} {1}:{2}".format(cluster, pnames[1], pgroup[0] + "-" + cl))
-                    print("{0} {1}:{2}".format(cluster, pnames[1], pgroup[0] + "-shared-" + cl))
+                    print("{0} {1}:{2}".format(cluster, p_names[1], pgroup[0] + "-" + cl))
+                    print("{0} {1}:{2}".format(cluster, p_names[1], pgroup[0] + "-shared-" + cl))
                 else:
                     print(
                         "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, pnames[1], pgroup[0] + "-" + cl))
+                            cluster, p_names[1], pgroup[0] + "-" + cl))
                     print(
                         "\tYou have an \033[1;36mowner\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, pnames[1], pgroup[0] + "-shared-" + cl))
+                            cluster, p_names[1], pgroup[0] + "-shared-" + cl))
 
         # ------ owner-guest accounts -------------------
         # have to get matchcl again since we may have changed it above
-        matchcl = [s for s in myaccts if cluster in s]
-        matchstr = ".*\\bguest\\.*"
+        match_cl = [s for s in my_accts if cluster in s]
+        match_str = ".*\\bguest\\.*"
         # print(matchstr)
         # print(matchcl, len(matchcl))
-        r = re.compile(matchstr)
-        myprojects = list(filter(r.match, matchcl))
+        r = re.compile(match_str)
+        myprojects = list(filter(r.match, match_cl))
         # print(myprojects)
         if len(myprojects) > 0:
             for project in myprojects:
@@ -316,18 +319,18 @@ def allocations():
                     gpustr = " GPU"
                 else:
                     gpustr = ""
-                pnames = project.split('|')
-                part = pnames[17].split(',')
+                p_names = project.split('|')
+                part = p_names[17].split(',')
                 #    #print(pnames)
                 if terse:
-                    print("{0} {1}:{2}".format(cluster, pnames[1], part[0]))
+                    print("{0} {1}:{2}".format(cluster, p_names[1], part[0]))
                 else:
                     print(
                         "\tYou can use \033[1;33mpreemptable{3}\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, pnames[1], part[0], gpustr))
+                            cluster, p_names[1], part[0], gpustr))
 
         # ------ GPU accounts -------------------
-        matchown1 = [s for s in myaccts if cluster in s]
+        matchown1 = [s for s in my_accts if cluster in s]
         matchown2 = [s for s in matchown1 if "gpu" in s]
         myprojects = [s for s in matchown2 if not "guest" in s]
         # print("matchown3")
@@ -339,11 +342,11 @@ def allocations():
         # print(myprojects,len(myprojects))
         if len(myprojects) > 0:
             for project in myprojects:
-                pnames = project.split('|')
+                p_names = project.split('|')
                 # print(pnames)
                 if terse:
-                    print("{0} {1}:{2}".format(cluster, pnames[1], pnames[17]))
+                    print("{0} {1}:{2}".format(cluster, p_names[1], p_names[17]))
                 else:
                     print(
                         "\tYou have a \033[1;36mGPU\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                            cluster, pnames[1], pnames[17]))
+                            cluster, p_names[1], p_names[17]))

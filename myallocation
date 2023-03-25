@@ -1,12 +1,28 @@
 #!/usr/bin/python3
+import time
 
 from util       import run_cmd, capture,syshost
 import allocations as alloc
 import allocations3 as alloc3
 from datetime import *
-import re, sys
+import re
+import sys
+
+
 print("ORIG ALLOCATIONS:")
+
+start_time =time.perf_counter()
 alloc.allocations()
+end_time =time.perf_counter()
+alloc_time = end_time - start_time
+
 print()
 print("ALLOCATIONS3:")
+
+start_time =time.perf_counter()
 alloc3.allocations()
+end_time =time.perf_counter()
+alloc3_time = end_time - start_time
+
+print(f"alloc:  {alloc_time:0.6f}")
+print(f"alloc3: {alloc3_time:0.6f}")
