@@ -144,6 +144,7 @@ def allocations():
                     p_names = match_fc0.split('|')
                     partition = [p_names[17], cluster + "-shared-freecycle"]
                     logging.debug(f"pnames: {p_names}")
+
                     if terse:
                         print_string_terse(p_names[1], cluster, partition)
                     else:
@@ -156,31 +157,28 @@ def allocations():
             logging.debug(f"matchg1: {matchg1}")
             filter_list = ["guest", "collab", "gpu", "eval", "shared-short", "notchpeak-shared"]
             # filter out gpu accounts, guest accounts, collab accts, eval, shared-short, and notchpeak-shared accts
-            matchg2 = [s for s in matchg1 if not "guest" in s]
-            matchg3 = [s for s in matchg2 if not "collab" in s]
+            matchg2 = [s for s in matchg1 if "guest" not in s]
+            matchg3 = [s for s in matchg2 if "collab" not in s]
             # also filter out gpu accounts
-            matchg4 = [s for s in matchg3 if not "gpu" in s]
-            matchg5 = [s for s in matchg4 if not "eval" in s]
-            matchg6 = [s for s in matchg5 if not "shared-short" in s]
-            matchg = [s for s in matchg6 if not "notchpeak-shared" in s]
-            if len(matchg) > 0:
-                # print(matchg)
+            matchg4 = [s for s in matchg3 if "gpu" not in s]
+            matchg5 = [s for s in matchg4 if "eval" not in s]
+            matchg6 = [s for s in matchg5 if "shared-short" not in s]
+            matchg = [s for s in matchg6 if "notchpeak-shared" not in s]
+
+            if matchg:
+                logging.debug(f"matchg: {matchg}")
                 for matchg1 in matchg:
-                    # print(matchg1)
+                    logging.debug(f"matchg1: {matchg1}")
                     myrecord1 = matchg1.split('|')
-                    # print(myrecord1)
+
+                    partition = [myrecord1[18]]
+                    if myrecord1[1] != "dtn":  # acct dtn that matches here does not have shared partition
+                        partition.append(cluster + "-shared")
+
                     if terse:
-                        print("{1} {0}:{2}".format(myrecord1[1], cluster, myrecord1[18]))
-                        if (myrecord1[1] != "dtn"):  # account dtn that matches here does not have shared partition
-                            print("{1} {0}:{2}".format(myrecord1[1], cluster, cluster + "-shared"))
+                        print_string_terse(myrecord1[1], cluster, partition)
                     else:
-                        print(
-                            "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                myrecord1[1], cluster, myrecord1[18]))
-                        if (myrecord1[1] != "dtn"):  # account dtn that matches here does not have shared partition
-                            print(
-                                "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{1}\033[0m. Account: \033[1;32m{0}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                    myrecord1[1], cluster, cluster + "-shared"))
+                        print_string_gen_alloc(cluster, myrecord1[1], partition)
 
         # ------ shared-short accounts -------------------
         matchgrp = [s for s in my_accts if "shared-short" in s]
