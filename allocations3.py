@@ -185,9 +185,9 @@ def allocations():
             match_cl = list(filter(r.match, match_cl))
             p_names = match_cl[0].split('|')
             if terse:
-                print_string_terse(p_names[1], cluster, p_names[1])
+                print_string_terse(p_names[1], cluster, [p_names[1]])
             else:
-                print_string_gen_alloc(cluster, p_names[1], p_names[1])
+                print_string_gen_alloc(cluster, p_names[1], [p_names[1]])
 
 
         # ------ owner accounts -------------------
