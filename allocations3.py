@@ -35,17 +35,30 @@ cl_ = {
     "scrubpeak": "sp"
 }
 
-def string_no_gen_alloc(pname_, cluster_):
-    return (f"\tYour group \033[1;31m{pname_}\033[0m does not have a"
-            f"\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m")
+def print_string_preemptable_mode(cluster_, acct_, partition_):
+    for p in partition_:
+        print (f"\tYou can use\033[1;33m preemptable\033[0m mode on \033[1;34m{cluster_}\033[0m. "
+               f"Account: \033[1;32m{acct_}\033[0m, Partition: \033[1;32m{p}\033[0m")
 
-def string_terse(pname_, cluster_):
-    return(f"{cluster_} {pname_[1]}:{pname_[17]}\n"
-           f"{cluster_} {pname_[1]}:{cluster_}-shared-freecycle")
+
+def print_string_gen_alloc(cluster_, acct_, partition_):
+    for p in partition_:
+        print(f"\tYou have a\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m. "
+              f"Account: \033[1;32m{acct_}\033[0m, Partition: \033[1;32m{p}\033[0m")
+
+
+def print_string_no_gen_alloc(pname_, cluster_):
+    print(f"\tYour group \033[1;31m{pname_}\033[0m does not have a"
+          f"\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m")
+
+
+def print_string_terse(pname_, cluster_, partition_):
+    for p in partition_:
+        print(f"{cluster_} {pname_}:{p}")
 
 
 # basic configuration for the logging system for debugging
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 def allocations():
     host = syshost()
@@ -129,17 +142,13 @@ def allocations():
 
                 for match_fc0 in match_fc:
                     p_names = match_fc0.split('|')
+                    partition = [p_names[17], cluster + "-shared-freecycle"]
                     logging.debug(f"pnames: {p_names}")
                     if terse:
-                        print(string_terse(p_names, cluster))
+                        print_string_terse(p_names[1], cluster, partition)
                     else:
-                        print(string_no_gen_alloc(p_names[1], cluster))
-                        print(
-                            "\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, p_names[1], p_names[17]))
-                        print(
-                            "\tYou can use \033[1;33mpreemptable\033[0m mode on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{2}\033[0m".format(
-                                cluster, p_names[1], cluster + "-shared-freecycle"))
+                        print_string_no_gen_alloc(p_names[1], cluster)
+                        print_string_preemptable_mode(p_names[1], cluster, partition)
 
             # ------ freecycle accounts -------------------
             # now look at allocated group accounts - so need to exclude owner-guest and freecycle
