@@ -1,7 +1,6 @@
 """
 allocations3 will contain more slow, incremental changes, to know why allocations2.py isn't working
 """
-
 import logging
 import os
 import re
@@ -40,10 +39,13 @@ def string_no_gen_alloc(pname_, cluster_):
     return (f"\tYour group \033[1;31m{pname_}\033[0m does not have a"
             f"\033[1;36m general\033[0m allocation on \033[1;34m{cluster_}\033[0m")
 
+def string_terse(pname_, cluster_):
+    return(f"{cluster_} {pname_[1]}:{pname_[17]}\n"
+           f"{cluster_} {pname_[1]}:{cluster_}-shared-freecycle")
 
 
 # basic configuration for the logging system for debugging
-logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 def allocations():
     host = syshost()
@@ -53,6 +55,7 @@ def allocations():
     else:
         if "ondemand" in host:
             clusters = clusters_["ondemand"]
+            host = "ondemand"
             logging.debug(f"host is ondemand:  syshost = {host}")
         else:
             clusters = clusters_["other"]
@@ -128,8 +131,7 @@ def allocations():
                     p_names = match_fc0.split('|')
                     logging.debug(f"pnames: {p_names}")
                     if terse:
-                        print("{0} {1}:{2}".format(cluster, p_names[1], p_names[17]))
-                        print("{0} {1}:{2}".format(cluster, p_names[1], cluster + "-shared-freecycle"))
+                        print(string_terse(p_names, cluster))
                     else:
                         print(string_no_gen_alloc(p_names[1], cluster))
                         print(
