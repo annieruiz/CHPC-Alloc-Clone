@@ -185,18 +185,17 @@ def allocations():
             match_cl = list(filter(r.match, match_cl))
             p_names = match_cl[0].split('|')
             if terse:
-                print("{0} {1}:{1}".format(cluster, p_names[1]))
+                print_string_terse(p_names[1], cluster, p_names[1])
             else:
-                print(
-                    "\tYou have a \033[1;36mgeneral\033[0m allocation on \033[1;34m{0}\033[0m. Account: \033[1;32m{1}\033[0m, Partition: \033[1;32m{1}\033[0m".format(
-                        cluster, p_names[1]))
+                print_string_gen_alloc(cluster, p_names[1], p_names[1])
+
 
         # ------ owner accounts -------------------
         # filter out owner accounts via Python list wrangling
         # matchown1 = [s for s in my_accts if any(xs in s for xs in [cluster, cl])]
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if cl in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_owner1 = [s for s in my_accts if cluster in s]
+        match_owner2 = [s for s in match_owner1 if cl in s]
+        my_projects = [s for s in match_owner2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # old logic with extra sacctmgr call
@@ -205,33 +204,35 @@ def allocations():
         # print("myprojects")
         # myprojects=capture(grep_cmd1).split()
         # print(myprojects,len(myprojects))
-        grepcmd2 = "scontrol -M {0} -o show partition | grep -v shared".format(cluster)
+        grep_cmd2 = "scontrol -M {0} -o show partition | grep -v shared".format(cluster)
         # print(grepcmd2)
         # allparts1=capture(grepcmd2)
         # print(allparts1)
-        allparts = capture(grepcmd2).splitlines()
+        allparts = capture(grep_cmd2).splitlines()
         # print(allparts)
         # testparts = subprocess.run(grepcmd2, stdout=subprocess.PIPE).stdout.decode('utf-8')
         # print(testparts)
 
-        for project in myprojects:
+        for project in my_projects:
             p_names = project.split('|')
             # print(pnames)
+
             # MC 1/24/20 - using scontrol to grep for partition that corresponds to the QOS in pnames[18]
             # example user that had QOS vs partition mix up - u6022494
-            qosname = p_names[18]
-            # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
             if len(p_names[18]) == 0:
-                qosname = p_names[17]
+                qos_name = p_names[17]  # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
+            else:
+                qos_name = p_names[18]
+
             # print(qosname)
             # grepcmd2="scontrol -M {1} -o show partition | grep {0} | grep -v shared".format(qosname,cluster)
             # print(grepcmd2)
             # myparts=capture(grepcmd2).split()
             # print("myparts")
             # print(myparts,len(myparts))
-            matchown1 = [s for s in allparts if qosname in s]
-            if matchown1:
-                myparts = matchown1[0].split()
+            match_owner = [s for s in allparts if qos_name in s]
+            if match_owner:
+                myparts = match_owner[0].split()
                 # print(myparts,len(myparts))
 
                 # print(myparts[0])
@@ -251,22 +252,22 @@ def allocations():
             else:
                 print(
                     "\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(
-                        qosname))
+                        qos_name))
 
         # ------ eval accounts -------------------
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if "eval" in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_owner1 = [s for s in my_accts if cluster in s]
+        match_owner2 = [s for s in match_owner1 if "eval" in s]
+        my_projects = [s for s in match_owner2 if not "guest" in s]
         # print(myprojects)
-        for project in myprojects:
+        for project in my_projects:
             p_names = project.split('|')
-            qosname = p_names[18]
+            qos_name = p_names[18]
             # in case "Def QOS" = pnames[18] is not defined, try "QOS" = pnames[17]
             if len(p_names[18]) == 0:
-                qosname = p_names[17]
-            matchown1 = [s for s in allparts if qosname in s]
-            if len(matchown1) > 0:
-                myparts = matchown1[0].split()
+                qos_name = p_names[17]
+            match_owner1 = [s for s in allparts if qos_name in s]
+            if len(match_owner1) > 0:
+                myparts = match_owner1[0].split()
                 mypart = myparts[0].split('=')
                 pgroup = mypart[1].split('-')
                 if terse:
@@ -278,12 +279,12 @@ def allocations():
             else:
                 print(
                     "\t\033[1;31mError:\033[0m you are in QOS \033[1;34m{0}\033[0m, but partition \033[1;32m{0}\033[0m does not exist. Please contact CHPC to fix this.".format(
-                        qosname))
+                        qos_name))
 
         # ------ collab accounts -------------------
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if "collab" in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_owner1 = [s for s in my_accts if cluster in s]
+        match_owner2 = [s for s in match_owner1 if "collab" in s]
+        my_projects = [s for s in match_owner2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w {2} | grep -v guest".format(userid,cluster,"collab")  # need to grep out guest since for ash cl=smithp-ash
@@ -291,7 +292,7 @@ def allocations():
         # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
-        for project in myprojects:
+        for project in my_projects:
             p_names = project.split('|')
             pgroup = p_names[17].split('-')
             # print(pnames)
@@ -313,9 +314,9 @@ def allocations():
         # print(matchstr)
         # print(matchcl, len(matchcl))
         r = re.compile(match_str)
-        myprojects = list(filter(r.match, match_cl))
+        my_projects = list(filter(r.match, match_cl))
         # print(myprojects)
-        for project in myprojects:
+        for project in my_projects:
             if "gpu" in project:
                 gpustr = " GPU"
             else:
@@ -331,9 +332,9 @@ def allocations():
                         cluster, p_names[1], part[0], gpustr))
 
         # ------ GPU accounts -------------------
-        matchown1 = [s for s in my_accts if cluster in s]
-        matchown2 = [s for s in matchown1 if "gpu" in s]
-        myprojects = [s for s in matchown2 if not "guest" in s]
+        match_owner1 = [s for s in my_accts if cluster in s]
+        match_owner2 = [s for s in match_owner1 if "gpu" in s]
+        my_projects = [s for s in match_owner2 if not "guest" in s]
         # print("matchown3")
         # print(matchown3,len(matchown3))
         # grep_cmd1="sacctmgr -p show assoc where user={0} | grep {1} | grep -w gpu | grep -v guest".format(userid,cluster)
@@ -341,7 +342,7 @@ def allocations():
         # myprojects=capture(grep_cmd1).split()
         # print("myprojects")
         # print(myprojects,len(myprojects))
-        for project in myprojects:
+        for project in my_projects:
             p_names = project.split('|')
             # print(pnames)
             if terse:
